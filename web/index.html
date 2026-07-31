@@ -1,246 +1,169 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fernweh · AI travel search</title>
-<meta name="description" content="Natural-language travel search with no dead ends, personalized ranking, and content that repairs itself. A Go services demo.">
-<link rel="preload" href="/fonts/PlusJakartaSans-var.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="/fonts/InstrumentSerif.woff2" as="font" type="font/woff2" crossorigin>
+<title>Fernweh · An AI travel platform, working</title>
+<meta name="description" content="Natural-language search, personalized ranking and self-repairing content, built as four Go services with Postgres, Redis, Asynq and OpenTelemetry.">
+<link rel="preload" href="/fonts/Archivo.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/style.css">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='none' stroke='%23c9647f' stroke-width='2'/><path d='M21 11 14 14 11 21 18 18Z' fill='%23c9647f'/></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23010101'/><path d='M9 24V8h11v3h-7v3.6h6.2v3H13V24Z' fill='%23f1f1f1'/></svg>">
 </head>
 <body>
 
-<!-- Loader: waits on fonts and on the platform reporting ready, so the
-     percentage reflects real readiness rather than a fixed timer. -->
-<div id="loader" aria-hidden="true">
-  <div class="loader-inner">
-    <span class="loader-mark"></span>
-    <span id="loader-pct" class="loader-pct">0</span>
-  </div>
-</div>
-
-<canvas id="scene" aria-hidden="true"></canvas>
-
 <header class="top">
-  <div class="shell top-inner">
-    <a class="brand" href="#top">
-      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
-        <circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="1.6"/>
-        <path d="M21 11 14 14 11 21 18 18Z" fill="currentColor"/>
-      </svg>
-      <span class="brand-name">Fernweh</span>
-    </a>
-    <nav class="tabs" aria-label="Sections">
-      <a class="tab" href="#beat-search">Search</a>
-      <a class="tab" href="#beat-rank">Ranking</a>
-      <a class="tab" href="#beat-enrich">Content</a>
-      <a class="tab" href="#beat-build">Build</a>
-    </nav>
-    <a class="ghost-link" href="https://github.com/Vijay190899/fernweh" target="_blank" rel="noopener">
-      Source
-      <svg viewBox="0 0 16 16" aria-hidden="true" class="ico"><path d="M4.5 11.5 11.5 4.5M6 4.5h5.5V10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </a>
+  <a class="wordmark" href="/">Fernweh<br>Travel&nbsp;AI</a>
+  <nav>
+    <a href="/search/">Search</a>
+    <a href="/recommendations/">Recommendations</a>
+    <a href="/content/">Content</a>
+  </nav>
+  <div class="right">
+    <a href="#build">The build</a>
+    <a href="https://github.com/Vijay190899/fernweh" target="_blank" rel="noopener">GitHub</a>
   </div>
 </header>
 
-<main id="top">
+<!-- ================= PORTAL =================
+     A tall scroll container with a pinned stage inside it. Scrolling first
+     swings the door open, then flies the whole scene past the camera so the
+     viewer passes through the opening and arrives among the products. -->
+<section class="portal" id="portal">
+ <div class="portal-stage">
 
-<!-- ========== BEAT 0 ========== -->
-<section class="beat hero" data-scene="globe">
-  <div class="shell hero-inner">
-    <p class="eyebrow">Fernweh <span class="sep">·</span> <em>n.</em> the ache for far-off places</p>
-    <h1 class="display">
-      Say where you want to go.<br>
-      <em>Not how to filter for it.</em>
-    </h1>
-    <p class="lede">
-      A working slice of an AI travel platform. One sentence in, bookable
-      trips out, and never an empty page. English or German.
-    </p>
+  <div class="scene" id="scene">
+    <div class="hero-bg"></div>
 
-    <form id="search-form" class="searchbar" autocomplete="off">
-      <label class="sr-only" for="q">Describe your trip</label>
-      <input id="q" name="q" type="text" maxlength="500"
-             placeholder="A beach weekend under €1,000 in March">
-      <button type="submit" id="go">
-        <span>Search</span>
-        <svg viewBox="0 0 16 16" aria-hidden="true" class="ico"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
-    </form>
-
-    <div class="chips" id="examples">
-      <button type="button" class="chip">A beach weekend under €1,000 in March</button>
-      <button type="button" class="chip">Family hotel in Crete with kids club, 4 stars</button>
-      <button type="button" class="chip">Städtetrip nach Wien im Oktober, ruhig und günstig</button>
-      <button type="button" class="chip">Somewhere warm and quiet in late spring, good food</button>
-    </div>
-  </div>
-
-  <div class="scroll-cue" aria-hidden="true">
-    <span>Scroll</span>
-    <svg viewBox="0 0 12 28"><path d="M6 2v22M2.5 20.5 6 24l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-  </div>
-</section>
-
-<!-- ========== RESULTS (revealed after a search) ========== -->
-<section id="results-zone" class="beat panel hidden">
-  <div class="shell">
-    <div id="meta" class="meta"></div>
-    <div id="relaxations" class="notice hidden"></div>
-    <div class="results-layout">
-      <div id="results" class="grid-cards"></div>
-      <aside class="profile-panel">
-        <h3>What the engine knows</h3>
-        <p class="fine">Session only. No account, nothing kept past seven days.
-          Open and book results to teach it.</p>
-        <div id="profile-body"><p class="fine dim">No signals yet. This session ranks cold.</p></div>
-        <button id="reset-session" class="ghost">Forget this session</button>
-      </aside>
-    </div>
-  </div>
-</section>
-
-<!-- ========== BEAT 1 ========== -->
-<section id="beat-search" class="beat story" data-scene="converge">
-  <div class="shell story-inner">
-    <span class="index">01</span>
-    <h2 class="display">Understanding<br><em>beats filtering.</em></h2>
-    <div class="story-body">
-      <p>A traveller writes one sentence. A language model turns it into a
-        strict, validated intent: destination, month, budget per night, party,
-        the amenities that matter. Then it queries live inventory.</p>
-      <p>When the model is unavailable, over budget, or slow, a deterministic
-        parser answers instead and the response says which path served it.
-        Search never fails because an AI provider failed.</p>
-      <dl class="facts">
-        <div><dt>Intent extraction</dt><dd>385 in / 50 out tokens</dd></div>
-        <div><dt>Fallback parse</dt><dd>14.8&thinsp;µs, zero network</dd></div>
-        <div><dt>Empty result pages</dt><dd>None, by construction</dd></div>
-      </dl>
-    </div>
-  </div>
-</section>
-
-<!-- ========== BEAT 2 ========== -->
-<section id="beat-rank" class="beat story alt" data-scene="rank">
-  <div class="shell story-inner">
-    <span class="index">02</span>
-    <h2 class="display">Ordered for you.<br><em>Still honest.</em></h2>
-    <div class="story-body">
-      <p>Every click, dwell and booking becomes a weighted signal. Those build
-        a session profile, and the profile reorders results. Each card carries
-        the reason it ranked where it did.</p>
-      <p>Merchandising rules sit alongside personal fit, bounded so a promoted
-        listing can tip a close call but never bury a clearly better match.
-        Promotions are always disclosed on the card.</p>
-      <dl class="facts">
-        <div><dt>Scoring</dt><dd>0.55 relevance · 0.30 personal · 0.15 business</dd></div>
-        <div><dt>Rank 30 candidates</dt><dd>10.5&thinsp;µs</dd></div>
-        <div><dt>Profile storage</dt><dd>Redis, 7-day TTL, no PII</dd></div>
-      </dl>
-    </div>
-  </div>
-</section>
-
-<!-- ========== BEAT 3 ========== -->
-<section id="beat-enrich" class="beat story" data-scene="grid">
-  <div class="shell story-inner">
-    <span class="index">03</span>
-    <h2 class="display">Inventory that<br><em>repairs itself.</em></h2>
-    <div class="story-body">
-      <p>Supplier feeds arrive with holes: no description, no amenities,
-        nothing to rank on. A scanner finds them, a queue distributes the work,
-        and a worker writes copy grounded strictly in facts already on the
-        listing. No invented pools, no invented views.</p>
-      <p>Every write is audited with its before, its after, and whether a model
-        or a template produced it.</p>
-    </div>
-  </div>
-</section>
-
-<section class="beat panel">
-  <div class="shell">
-    <div class="ops-head">
-      <h3>Content operations, live</h3>
-      <button id="scan-btn">Run a scan</button>
-    </div>
-    <div id="stat-tiles" class="tiles"></div>
-    <div class="ops-tables">
-      <div class="ops-col">
-        <h4>Waiting on enrichment <span id="gap-count" class="count"></span></h4>
-        <div id="gap-list" class="rows"></div>
+    <div class="door-stage" aria-hidden="true">
+      <div class="door-frame">
+        <div class="door-inner"></div>
+        <div class="door-panel" id="door-panel"><span class="door-knob"></span></div>
       </div>
-      <div class="ops-col">
-        <h4>Recently repaired <span class="count live-dot"></span></h4>
-        <div id="enriched-list" class="rows"></div>
+    </div>
+
+    <div class="hero-top">
+      <p class="label">A working travel platform, not a mockup</p>
+      <h1 class="d1">Step into a world<br>of <em>discoveries</em></h1>
+    </div>
+
+    <div class="hero-copy">
+      <p class="lede">Three services behind one sentence of plain language: search
+        that never dead-ends, ranking that explains itself, and inventory that
+        repairs its own content.</p>
+    </div>
+
+    <div class="scroll-cue label" aria-hidden="true">Scroll to open the door</div>
+  </div>
+
+  <!-- Beyond the doorway. -->
+  <div class="reveal" id="reveal">
+    <div class="shell">
+      <p class="label" style="margin:0 0 14px">Three products, each one live</p>
+      <div class="products">
+    <a class="product" href="/search/">
+      <img src="/img/santorini2.jpg" alt="">
+      <span class="corner label">01 · Search</span>
+      <div class="product-body">
+        <p class="label">Natural language</p>
+        <h3>Understanding beats filtering</h3>
+        <p>One sentence becomes a validated intent, then a query against live
+          inventory. Over-constrained searches relax in a fixed order and say
+          exactly what they changed.</p>
+        <span class="go">Open the demo</span>
+      </div>
+    </a>
+
+    <a class="product" href="/recommendations/">
+      <img src="/img/santorini.jpg" alt="">
+      <span class="corner label">02 · Recommendations</span>
+      <div class="product-body">
+        <p class="label">Personalization</p>
+        <h3>Ordered for you, still honest</h3>
+        <p>Clicks and bookings build a session profile that reorders results.
+          Merchandising rules are bounded, so a promotion can tip a close call
+          but never bury a better match.</p>
+        <span class="go">Open the demo</span>
+      </div>
+    </a>
+
+    <a class="product" href="/content/">
+      <img src="/img/alps.jpg" alt="">
+      <span class="corner label">03 · Content</span>
+      <div class="product-body">
+        <p class="label">Enrichment API</p>
+        <h3>Inventory that repairs itself</h3>
+        <p>Supplier feeds arrive with holes. A scanner finds them, a queue
+          distributes the work, and a worker writes copy grounded only in facts
+          already on the listing.</p>
+        <span class="go">Open the demo</span>
+      </div>
+    </a>
       </div>
     </div>
   </div>
+
+ </div>
 </section>
 
-<!-- ========== BEAT 4 ========== -->
-<section id="beat-build" class="beat story alt" data-scene="grid">
-  <div class="shell story-inner">
-    <span class="index">04</span>
-    <h2 class="display">Built to be<br><em>taken apart.</em></h2>
-    <div class="story-body">
-      <p>Four Go services, no web framework, one trace per request that follows
-        a job across a Redis queue into a worker. Postgres, Redis, Asynq,
-        OpenTelemetry, Betterstack. The same Compose file runs locally and in
-        production.</p>
+<!-- ================= WHAT THIS IS ================= -->
+<main>
+<section class="section shell" id="build">
+  <hr class="rule">
+  <div class="section-head" style="margin-top:clamp(22px,4vh,46px)">
+    <h2 class="d2">Built to be<br><em>taken apart.</em></h2>
+    <p class="lede muted">A Go monorepo with no web framework, four services, and one
+      trace that follows a job across a Redis queue into a worker. The same
+      Compose file runs on a laptop and in production.</p>
+  </div>
+
+  <dl class="facts">
+    <div><dt>Services</dt><dd>4<small>Gateway, search, ranking, enrichment. One Go module, no framework.</small></dd></div>
+    <div><dt>Load tested</dt><dd>400<small>Requests per second, 15,498 requests, zero errors, p95 flat at 5 ms.</small></dd></div>
+    <div><dt>Fallback parse</dt><dd>14.8&thinsp;µs<small>The deterministic path, used whenever the model is unavailable.</small></dd></div>
+    <div><dt>Dead ends</dt><dd>0<small>Guaranteed by a relaxation ladder whose last rung has no constraints.</small></dd></div>
+  </dl>
+
+  <div class="cols" style="margin-top:clamp(26px,4vh,48px)">
+    <div>
+      <h4>The AI is optional at runtime</h4>
+      <p>One client owns model access and meters spend against a daily budget.
+        Remove the key and every feature still works on deterministic paths,
+        and the response tells you which path served it.</p>
+    </div>
+    <div>
+      <h4>One trace across the queue</h4>
+      <p>Trace context is serialised into the task payload, so a scan, its Redis
+        hop, the worker and the database write appear as a single trace in
+        Jaeger. Every search response links its own.</p>
+    </div>
+    <div>
+      <h4>No QA team</h4>
+      <p>Table-driven tests cover every decision path, benchmarks cover the hot
+        ones, and a load generator produces the numbers above. The suite and the
+        traces are the QA.</p>
+    </div>
+    <div>
+      <h4>Built with Claude Code</h4>
+      <p>Specs first, invariants in <code>CLAUDE.md</code>, one reviewed pull
+        request per capability. The build log lists the bugs the model wrote and
+        exactly how each was caught.</p>
     </div>
   </div>
-</section>
 
-<section class="beat panel">
-  <div class="shell">
-    <div class="cards">
-      <article class="card-note">
-        <h4>The AI is optional at runtime</h4>
-        <p>One client owns model access and meters spend against a daily
-          budget. Remove the key and every feature still works, on
-          deterministic paths, and the badge above your results says so.</p>
-      </article>
-      <article class="card-note">
-        <h4>No dead ends, disclosed</h4>
-        <p>Over-constrained queries relax in a fixed order: style, amenities,
-          rating, budget by 15 then 30 percent, dates, place. Whatever was
-          relaxed is shown to the traveller.</p>
-      </article>
-      <article class="card-note">
-        <h4>One trace across the queue</h4>
-        <p>Trace context is serialised into the task payload, so a scan, its
-          Redis hop, the worker and the database write appear as a single
-          trace. Every search response links its own.</p>
-      </article>
-      <article class="card-note">
-        <h4>Measured, not asserted</h4>
-        <p>15,498 requests across five load levels, zero errors, p95 flat at
-          five milliseconds from 25 to 400 requests per second. The generator
-          that produced those numbers is in the repository.</p>
-      </article>
-    </div>
-    <div class="linkrow">
-      <a id="jaeger-link" href="http://localhost:16686" target="_blank" rel="noopener">Open Jaeger</a>
-      <a href="https://github.com/Vijay190899/fernweh/blob/main/docs/ARCHITECTURE.md" target="_blank" rel="noopener">Architecture</a>
-      <a href="https://github.com/Vijay190899/fernweh/blob/main/docs/PRD.md" target="_blank" rel="noopener">Product spec</a>
-      <a href="https://github.com/Vijay190899/fernweh/blob/main/docs/BUILDLOG-claude-code.md" target="_blank" rel="noopener">Build log</a>
-    </div>
-  </div>
+  <p style="margin-top:clamp(26px,4vh,44px)">
+    <a class="btn" href="https://github.com/Vijay190899/fernweh" target="_blank" rel="noopener">Read the source</a>
+    <a class="btn light" href="/search/" style="margin-left:8px">Try the search</a>
+  </p>
 </section>
-
 </main>
 
 <footer class="foot">
   <div class="shell foot-inner">
-    <span>Built by <strong>Vijay Ananth</strong> with Claude Code</span>
-    <span class="stackline">Go · PostgreSQL · Redis · Asynq · OpenTelemetry · Betterstack</span>
+    <span>Built by Vijay Ananth with Claude Code</span>
+    <span>Go · PostgreSQL · Redis · Asynq · OpenTelemetry · Betterstack</span>
   </div>
 </footer>
 
-<script src="/scene.js" defer></script>
-<script src="/app.js" defer></script>
+<script src="/door.js" defer></script>
 </body>
 </html>

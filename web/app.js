@@ -98,21 +98,24 @@ let jaegerURL = "http://localhost:16686";
 api("/api-config").then(({ data }) => {
   if (data.jaeger_url) {
     jaegerURL = data.jaeger_url;
-    $("#jaeger-link").href = jaegerURL;
+    const link = $("#jaeger-link");
+    if (link) link.href = jaegerURL;
   }
 }).catch(() => {});
 
-/* ================= SEARCH ================= */
+/* ================= SEARCH =================
+ * Each page carries only the part of the interface it needs, so every
+ * initialiser below is guarded rather than assuming a single document. */
 const form = $("#search-form");
 const input = $("#q");
 
-$("#examples").addEventListener("click", (e) => {
+$("#examples")?.addEventListener("click", (e) => {
   if (!e.target.classList.contains("chip")) return;
   input.value = e.target.textContent;
   form.requestSubmit();
 });
 
-form.addEventListener("submit", async (e) => {
+form?.addEventListener("submit", async (e) => {
   e.preventDefault();
   const query = input.value.trim();
   if (!query) return;
@@ -292,7 +295,7 @@ async function refreshProfile() {
   } catch { /* panel is decorative; never break search over it */ }
 }
 
-$("#reset-session").addEventListener("click", () => {
+$("#reset-session")?.addEventListener("click", () => {
   session = newSession();
   refreshProfile();
   $("#profile-body").innerHTML = '<p class="fine dim">Fresh session. The engine forgot you.</p>';
@@ -374,7 +377,22 @@ function renderOpsRows(el, listings, withAudit) {
   }
 }
 
-$("#scan-btn").addEventListener("click", async (e) => {
+$("#reset-demo")?.addEventListener("click", async (e) => {
+  const btn = e.currentTarget;
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.textContent = "Resetting…";
+  try {
+    const { data } = await api("/api/enrich/demo-reset", { method: "POST" });
+    btn.textContent = `${data.reset} listings broken again`;
+    pollOps();
+  } catch {
+    btn.textContent = "Reset failed, retry";
+  }
+  setTimeout(() => { btn.disabled = false; btn.textContent = original; }, 2600);
+});
+
+$("#scan-btn")?.addEventListener("click", async (e) => {
   e.target.disabled = true;
   e.target.textContent = "Scanning…";
   try {

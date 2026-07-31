@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Content Enrichment · Fernweh</title>
+<meta name="description" content="A queued pipeline that finds listings with missing content and writes copy grounded only in facts already on the listing, with a full audit trail.">
+<link rel="preload" href="/fonts/Archivo.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23010101'/><path d='M9 24V8h11v3h-7v3.6h6.2v3H13V24Z' fill='%23f1f1f1'/></svg>">
+</head>
+<body class="scrolled">
+
+<header class="top">
+  <a class="wordmark" href="/">Fernweh<br>Travel&nbsp;AI</a>
+  <nav>
+    <a href="/search/">Search</a>
+    <a href="/recommendations/">Recommendations</a>
+    <a href="/content/" aria-current="page">Content</a>
+  </nav>
+  <div class="right">
+    <a href="/">Overview</a>
+    <a href="https://github.com/Vijay190899/fernweh" target="_blank" rel="noopener">GitHub</a>
+  </div>
+</header>
+
+<section class="page-hero">
+  <img src="/img/alps.jpg" alt="">
+  <div class="page-hero-copy shell">
+    <p class="label">03 · Content Enrichment</p>
+    <h1 class="d2">Inventory that<br><em>repairs itself.</em></h1>
+  </div>
+</section>
+
+<main class="shell section">
+  <div class="section-head">
+    <p class="lede">Supplier feeds arrive with holes: no description, no amenities,
+      nothing to rank on. A scanner finds them, a queue distributes the work, and
+      a worker writes copy grounded strictly in facts already on the listing.
+      No invented pools, no invented views.</p>
+    <p class="lede muted">Press reset to put a slice of the catalogue back into a
+      broken state, then run a scan and watch the queue drain. Click any repaired
+      listing to see its before, its after, and which path produced it.</p>
+  </div>
+
+  <p style="display:flex;gap:8px;flex-wrap:wrap">
+    <button id="scan-btn" class="btn">Run a scan</button>
+    <button id="reset-demo" class="btn light">Break some listings again</button>
+  </p>
+
+  <div id="stat-tiles" class="tiles" style="margin-top:clamp(22px,4vh,42px)"></div>
+
+  <div class="ops-tables">
+    <div>
+      <h4 class="label" style="margin:0 0 12px">Waiting on enrichment <span id="gap-count"></span></h4>
+      <div id="gap-list" class="rows"></div>
+    </div>
+    <div>
+      <h4 class="label" style="margin:0 0 12px">Recently repaired <span class="live-dot"></span></h4>
+      <div id="enriched-list" class="rows"></div>
+    </div>
+  </div>
+
+  <hr class="rule" style="margin:clamp(40px,7vh,80px) 0 clamp(22px,4vh,44px)">
+  <dl class="facts">
+    <div><dt>Template generation</dt><dd>910&thinsp;ns<small>The zero-budget path. Enrichment progresses with no model at all.</small></dd></div>
+    <div><dt>Per listing</dt><dd>$0.00094<small>With a model. Repairing all 126 seeded gaps costs about twelve cents.</small></dd></div>
+    <div><dt>Idempotency</dt><dd>2<small>A claim guard in SQL, and a content hash over the source facts.</small></dd></div>
+    <div><dt>Audit coverage</dt><dd>100%<small>Every write records before, after, and whether a model or template wrote it.</small></dd></div>
+  </dl>
+
+  <div class="cols" style="margin-top:clamp(26px,4vh,48px)">
+    <div>
+      <h4>Grounded, then checked</h4>
+      <p>The prompt receives only the listing's own fields and is told not to
+        invent. The reply is then validated in code: every original amenity must
+        survive, and at most three may be added.</p>
+    </div>
+    <div>
+      <h4>Safe to replay</h4>
+      <p>A worker claims a listing with a compare-and-set in SQL, so two workers
+        racing means one wins and the other cleanly skips. Overlapping scans are
+        deduplicated at enqueue time.</p>
+    </div>
+    <div>
+      <h4>Failure stays visible</h4>
+      <p>Transient errors release the claim so the queue can retry with backoff.
+        Exhausted retries park the listing as failed, where this dashboard shows
+        it rather than losing it silently.</p>
+    </div>
+  </div>
+</main>
+
+<footer class="foot">
+  <div class="shell foot-inner">
+    <span>Built by Vijay Ananth with Claude Code</span>
+    <span>Go · PostgreSQL · Redis Asynq · OpenTelemetry</span>
+  </div>
+</footer>
+
+<script src="/app.js" defer></script>
+</body>
+</html>
