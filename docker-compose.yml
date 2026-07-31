@@ -1,0 +1,100 @@
+name: fernweh
+
+x-service-env: &service-env
+  DATABASE_URL: postgres://fernweh:fernweh@postgres:5432/fernweh?sslmode=disable
+  REDIS_ADDR: redis:6379
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+  OTEL_TRACES_ENABLED: "true"
+  SEARCH_URL: http://search:8081
+  RANKING_URL: http://ranking:8082
+  ENRICH_URL: http://enrich:8083
+  OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+  LLM_MODEL: ${LLM_MODEL:-anthropic/claude-haiku-4.5}
+  LLM_TIMEOUT_MS: ${LLM_TIMEOUT_MS:-2500}
+  LLM_DAILY_CALL_BUDGET: ${LLM_DAILY_CALL_BUDGET:-2000}
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: fernweh
+      POSTGRES_PASSWORD: fernweh
+      POSTGRES_DB: fernweh
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fernweh"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.60
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    command: ["--memory.max-traces=20000"]
+    ports:
+      - "16686:16686" # UI
+      - "4318:4318"   # OTLP HTTP
+
+  seed:
+    build: { context: ., args: { CMD: seed } }
+    environment: *service-env
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  search:
+    build: { context: ., args: { CMD: search } }
+    environment:
+      <<: *service-env
+      SEARCH_ADDR: :8081
+    ports: ["8081:8081"]
+    depends_on:
+      seed: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+    restart: unless-stopped
+
+  ranking:
+    build: { context: ., args: { CMD: ranking } }
+    environment:
+      <<: *service-env
+      RANKING_ADDR: :8082
+    ports: ["8082:8082"]
+    depends_on:
+      seed: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+    restart: unless-stopped
+
+  enrich:
+    build: { context: ., args: { CMD: enrich } }
+    environment:
+      <<: *service-env
+      ENRICH_ADDR: :8083
+    ports: ["8083:8083"]
+    depends_on:
+      seed: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+    restart: unless-stopped
+
+  gateway:
+    build: { context: ., args: { CMD: gateway } }
+    environment:
+      <<: *service-env
+      GATEWAY_ADDR: :8080
+      RATE_LIMIT_RPS: ${RATE_LIMIT_RPS:-5}
+      RATE_LIMIT_BURST: ${RATE_LIMIT_BURST:-15}
+    ports: ["8080:8080"]
+    depends_on: [search, ranking, enrich]
+    restart: unless-stopped
+
+volumes:
+  pgdata:
