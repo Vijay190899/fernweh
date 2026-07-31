@@ -92,6 +92,7 @@ services:
       GATEWAY_ADDR: :8080
       RATE_LIMIT_RPS: ${RATE_LIMIT_RPS:-5}
       RATE_LIMIT_BURST: ${RATE_LIMIT_BURST:-15}
+      JAEGER_UI_URL: ${JAEGER_UI_URL:-http://localhost:16686}
     ports: ["8080:8080"]
     depends_on: [search, ranking, enrich]
     restart: unless-stopped

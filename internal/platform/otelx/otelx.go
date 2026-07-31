@@ -33,8 +33,10 @@ func Setup(ctx context.Context, service, endpoint string, enabled bool) (func(co
 	if err != nil {
 		return nil, fmt.Errorf("otel exporter: %w", err)
 	}
+	// Schemaless: merging a versioned schema here conflicts whenever the SDK's
+	// default resource advances its semconv version.
 	res, err := sdkresource.Merge(sdkresource.Default(),
-		sdkresource.NewWithAttributes(semconv.SchemaURL, semconv.ServiceName(service)))
+		sdkresource.NewSchemaless(semconv.ServiceName(service)))
 	if err != nil {
 		return nil, fmt.Errorf("otel resource: %w", err)
 	}

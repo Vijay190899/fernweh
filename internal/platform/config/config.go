@@ -24,9 +24,10 @@ type Config struct {
 	LLMTimeout     time.Duration
 	LLMDailyBudget int
 
-	SearchURL  string
-	RankingURL string
-	EnrichURL  string
+	SearchURL   string
+	RankingURL  string
+	EnrichURL   string
+	JaegerUIURL string
 
 	RateLimitRPS   float64
 	RateLimitBurst int
@@ -48,6 +49,7 @@ func Load(service string) Config {
 		SearchURL:      getStr("SEARCH_URL", "http://localhost:8081"),
 		RankingURL:     getStr("RANKING_URL", "http://localhost:8082"),
 		EnrichURL:      getStr("ENRICH_URL", "http://localhost:8083"),
+		JaegerUIURL:    getStr("JAEGER_UI_URL", "http://localhost:16686"),
 		RateLimitRPS:   getFloat("RATE_LIMIT_RPS", 5),
 		RateLimitBurst: getInt("RATE_LIMIT_BURST", 15),
 	}
