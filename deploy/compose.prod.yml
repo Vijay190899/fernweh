@@ -1,0 +1,43 @@
+# Production overlay: docker compose -f docker-compose.yml -f deploy/compose.prod.yml up -d
+# Adds Caddy TLS edge, resource limits, and removes host exposure of internals.
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in .env}
+      JAEGER_BASIC_AUTH: ${JAEGER_BASIC_AUTH:?bcrypt hash, see deploy/README}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    depends_on: [gateway]
+
+  postgres:
+    ports: !override []
+    deploy: { resources: { limits: { memory: 512M } } }
+
+  redis:
+    ports: !override []
+    deploy: { resources: { limits: { memory: 256M } } }
+
+  jaeger:
+    ports: !override []
+    command: ["--memory.max-traces=5000"]
+    deploy: { resources: { limits: { memory: 400M } } }
+    restart: unless-stopped
+
+  search:
+    ports: !override []
+  ranking:
+    ports: !override []
+  enrich:
+    ports: !override []
+
+  gateway:
+    ports: !override []
+    environment:
+      JAEGER_UI_URL: https://${DOMAIN}/jaeger
+
+volumes:
+  caddy_data:
