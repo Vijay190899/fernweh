@@ -1,43 +1,44 @@
-# Production overlay: docker compose -f docker-compose.yml -f deploy/compose.prod.yml up -d
-# Adds Caddy TLS edge, resource limits, and removes host exposure of internals.
+# Production overlay.
+#
+#   docker compose -f docker-compose.yml -f deploy/compose.prod.yml up -d
+#
+# Adds restart policies and memory limits, and stops publishing host ports for
+# everything except the gateway. TLS, routing and certificate renewal are the
+# container platform's job (Traefik, managed by Coolify), so there is no
+# reverse proxy defined here: one less moving part than hand-rolling one.
 services:
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    ports: ["80:80", "443:443"]
-    environment:
-      DOMAIN: ${DOMAIN:?set DOMAIN in .env}
-      JAEGER_BASIC_AUTH: ${JAEGER_BASIC_AUTH:?bcrypt hash, see deploy/README}
-    volumes:
-      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-    depends_on: [gateway]
-
   postgres:
     ports: !override []
+    restart: unless-stopped
     deploy: { resources: { limits: { memory: 512M } } }
 
   redis:
     ports: !override []
+    restart: unless-stopped
     deploy: { resources: { limits: { memory: 256M } } }
 
   jaeger:
     ports: !override []
     command: ["--memory.max-traces=5000"]
-    deploy: { resources: { limits: { memory: 400M } } }
     restart: unless-stopped
+    deploy: { resources: { limits: { memory: 400M } } }
 
   search:
     ports: !override []
+    restart: unless-stopped
+    deploy: { resources: { limits: { memory: 256M } } }
+
   ranking:
     ports: !override []
+    restart: unless-stopped
+    deploy: { resources: { limits: { memory: 192M } } }
+
   enrich:
     ports: !override []
+    restart: unless-stopped
+    deploy: { resources: { limits: { memory: 256M } } }
 
+  # The only service the platform routes traffic to.
   gateway:
-    ports: !override []
-    environment:
-      JAEGER_UI_URL: https://${DOMAIN}/jaeger
-
-volumes:
-  caddy_data:
+    restart: unless-stopped
+    deploy: { resources: { limits: { memory: 192M } } }
