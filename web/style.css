@@ -106,9 +106,12 @@ body.scrolled .top { color: var(--ink); text-shadow: none; background: var(--pap
    through the container is the timeline: the door opens, then the scene
    rushes past the camera and the products are already there behind it. */
 .portal { position: relative; height: 340vh; }
+/* The stage sits on paper, so as the scene fades out at the end of the fly
+   through the viewer lands on the same surface the products are laid out on
+   and there is no seam between the sequence and the page. */
 .portal-stage {
   position: sticky; top: 0; height: 100vh; min-height: 560px;
-  overflow: hidden; background: #9dbdd8;
+  overflow: hidden; background: var(--paper);
 }
 .scene {
   position: absolute; inset: 0;
@@ -117,22 +120,36 @@ body.scrolled .top { color: var(--ink); text-shadow: none; background: var(--pap
   opacity: var(--scene-opacity, 1);
   will-change: transform, opacity;
 }
-/* Flex, not grid: an auto-margined child of a grid container stops
-   stretching and collapses to its minimum, which flattened the card row
-   into a single narrow column. */
-.reveal {
-  position: absolute; inset: 0; z-index: 5;
-  display: flex; flex-direction: column; justify-content: center;
-  padding: 84px var(--gutter) 34px;
-  opacity: var(--reveal-opacity, 0);
-  transform: scale(var(--reveal-scale, .92));
-  pointer-events: none;
+/* ---------- product rows ----------
+   Alternating sides, with the copy on a panel beside the photograph rather
+   than burned into it, so the text sits on paper at full contrast. */
+.prow {
+  display: grid; grid-template-columns: 1.15fr .85fr;
+  gap: clamp(18px, 3vw, 52px); align-items: center;
+  margin-bottom: clamp(40px, 7vh, 96px);
 }
-.reveal > .shell { width: 100%; padding: 0; }
-.reveal[data-open="1"] { pointer-events: auto; }
-.reveal .products { gap: 12px; }
-.reveal .product { aspect-ratio: auto; min-height: 0; }
-.reveal .product { height: clamp(300px, 52vh, 460px); }
+.prow.reverse { grid-template-columns: .85fr 1.15fr; }
+.prow.reverse .prow-media { order: 2; }
+.prow.reverse .prow-panel { order: 1; }
+.prow-media { overflow: hidden; border-radius: var(--r); background: var(--card); }
+.prow-media img {
+  width: 100%; height: clamp(260px, 46vh, 470px); object-fit: cover;
+  transition: transform 1s var(--ease);
+}
+.prow:hover .prow-media img { transform: scale(1.04); }
+.prow-panel { padding: clamp(16px, 2vw, 30px) 0; }
+.prow-panel .label { color: var(--ink-40); margin: 0 0 14px; }
+.prow-panel p { color: var(--ink-60); margin: 16px 0 22px; max-width: 44ch; font-size: 15px; line-height: 1.5; }
+
+/* The panel fades and rises into place as its row is reached. */
+.reveal-on-scroll .prow-panel,
+.reveal-on-scroll .prow-media {
+  opacity: 0; transform: translateY(22px);
+  transition: opacity .75s var(--ease), transform .75s var(--ease);
+}
+.reveal-on-scroll .prow-panel { transition-delay: .1s; }
+.reveal-on-scroll.in .prow-panel,
+.reveal-on-scroll.in .prow-media { opacity: 1; transform: none; }
 
 .hero {
   position: relative; height: 100vh; min-height: 620px;
@@ -223,7 +240,10 @@ body.scrolled .top { color: var(--ink); text-shadow: none; background: var(--pap
 .page-hero-copy .label { margin: 0 0 10px; opacity: .9; }
 
 /* ---------- generic section ---------- */
-.section { padding: clamp(58px, 9vh, 118px) 0; }
+/* padding-block, not the shorthand: an element carrying both .section and
+   .shell would otherwise have its horizontal gutter reset to zero and bleed
+   to the viewport edge. */
+.section { padding-block: clamp(58px, 9vh, 118px); }
 .section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 30px; margin-bottom: clamp(22px, 4vh, 46px); }
 .rule { border: 0; border-top: 1px solid var(--ink-12); margin: 0; }
 
