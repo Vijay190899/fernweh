@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AI Recommendations · Fernweh</title>
-<meta name="description" content="Session signals build a traveller profile that reorders results, with bounded merchandising rules and a reason on every card.">
+<title>Recommendation Engine · Fernweh</title>
+<meta name="description" content="How the ranking engine works, stage by stage, with measured offline evaluation against an unpersonalized baseline.">
 <link rel="preload" href="/fonts/Archivo.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/style.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23010101'/><path d='M9 24V8h11v3h-7v3.6h6.2v3H13V24Z' fill='%23f1f1f1'/></svg>">
@@ -27,22 +27,99 @@
 <section class="page-hero">
   <img src="/img/santorini.jpg" alt="">
   <div class="page-hero-copy shell">
-    <p class="label">02 · AI Recommendations</p>
+    <p class="label">02 · Recommendation Engine</p>
     <h1 class="d2">Ordered for you.<br><em>Still honest.</em></h1>
   </div>
 </section>
 
 <main class="shell section">
-  <div class="section-head">
-    <p class="lede">Every view, click and booking becomes a weighted signal. Those
-      build a session profile, and the profile reorders results. Each card carries
-      the reason it ranked where it did.</p>
-    <p class="lede muted">Book a few stays of the same kind, then run a
-      deliberately vague search such as "somewhere with a sauna". The order
-      changes, every card states why it ranked where it did, and the panel on
-      the right shows what the engine inferred. Avoid pinning a month while
-      testing: it filters inventory before ranking ever sees it.</p>
+
+  <!-- ============ PIPELINE ============ -->
+  <p class="pill-label">How it works</p>
+  <h2 class="d3" style="margin-bottom:10px">Four stages, and the code behind each</h2>
+  <p class="lede muted" style="margin-bottom:clamp(24px,4vh,44px)">
+    This runs on every search. Step through it below, or open the file that
+    implements any stage.</p>
+
+  <div class="pipeline">
+    <button class="btn" id="pipe-play">Play the pipeline</button>
+
+    <ol class="stages" id="stages">
+      <li class="stage" data-stage="0">
+        <span class="stage-n">01</span>
+        <h4>Signals arrive</h4>
+        <p>A view, click, dwell or booking is posted per session and folded into
+          a Redis hash, weighted by type. No account, no personal data, and a
+          seven-day expiry.</p>
+        <code>view 1 · search 2 · dwell 2 · click 3 · book 5</code>
+        <a class="src" href="https://github.com/Vijay190899/fernweh/blob/main/internal/ranking/signals.go" target="_blank" rel="noopener">internal/ranking/signals.go</a>
+      </li>
+      <li class="stage" data-stage="1">
+        <span class="stage-n">02</span>
+        <h4>Profile is built</h4>
+        <p>Those counters normalise into category affinities, amenity and vibe
+          weights, and an average observed price. A session with no signals
+          yields a zero profile, which the scorer treats as no personalization.</p>
+        <code>cat:beach 0.71 · amen:pool 0.34 · avg €120</code>
+        <a class="src" href="https://github.com/Vijay190899/fernweh/blob/main/internal/ranking/signals.go" target="_blank" rel="noopener">internal/ranking/signals.go</a>
+      </li>
+      <li class="stage" data-stage="2">
+        <span class="stage-n">03</span>
+        <h4>Candidates are scored</h4>
+        <p>Search sends its candidates here. Each is scored as base relevance,
+          personal fit, and a bounded business term, and every contribution that
+          fires becomes a readable reason on the card.</p>
+        <code>0.55 base + 0.30 personal + 0.15 business</code>
+        <a class="src" href="https://github.com/Vijay190899/fernweh/blob/main/internal/ranking/scorer.go" target="_blank" rel="noopener">internal/ranking/scorer.go</a>
+      </li>
+      <li class="stage" data-stage="3">
+        <span class="stage-n">04</span>
+        <h4>Search re-orders</h4>
+        <p>Ranked ids go back to search, which reassembles the page. If ranking
+          is slow or down, search returns base relevance order and flags the
+          response as degraded rather than failing.</p>
+        <code>800 ms cap · degrade, never fail</code>
+        <a class="src" href="https://github.com/Vijay190899/fernweh/blob/main/internal/search/service.go" target="_blank" rel="noopener">internal/search/service.go</a>
+      </li>
+    </ol>
   </div>
+
+  <!-- ============ EVALUATION ============ -->
+  <hr class="rule" style="margin:clamp(46px,8vh,90px) 0 clamp(24px,4vh,44px)">
+  <p class="pill-label">Measured, not claimed</p>
+  <h2 class="d3" style="margin-bottom:10px">Offline evaluation</h2>
+  <p class="lede muted">Six personas are declared in source with a stated
+    0&ndash;3 grading rule, then ranked by the same function production uses.
+    The baseline is that identical function with an empty profile, which is what
+    a first-time visitor receives.
+    <a href="https://github.com/Vijay190899/fernweh/blob/main/docs/EVALUATION.md" target="_blank" rel="noopener">Full report and method</a> ·
+    <a href="https://github.com/Vijay190899/fernweh/blob/main/internal/ranking/eval.go" target="_blank" rel="noopener">the harness</a></p>
+
+  <div id="eval-tiles" class="tiles" style="margin-top:clamp(20px,3vh,36px)"></div>
+  <p class="fine" id="eval-meta"></p>
+
+  <div class="honesty">
+    <h4>What is deliberately not on this page</h4>
+    <ul>
+      <li><strong>Click-through and conversion rate.</strong> Both need live
+        traffic. There is no honest way to produce them from a demo with no
+        users, so they are absent rather than estimated.</li>
+      <li><strong>RMSE, MAE and MSE.</strong> Those evaluate rating prediction.
+        This engine ranks and never predicts a rating, so they do not apply.</li>
+      <li><strong>Diversity is lower when personalized.</strong> That is the
+        intended trade-off, not a regression: someone with a stated preference
+        should get a concentrated page. It would only become a problem
+        approaching zero, which would be a filter bubble.</li>
+    </ul>
+  </div>
+
+  <!-- ============ LIVE ============ -->
+  <hr class="rule" style="margin:clamp(46px,8vh,90px) 0 clamp(24px,4vh,44px)">
+  <p class="pill-label">Try it</p>
+  <h2 class="d3" style="margin-bottom:10px">Teach it, then watch it reorder</h2>
+  <p class="lede muted" style="margin-bottom:22px">Book a few stays of the same
+    kind, then run a vague search. Avoid pinning a month: that filters inventory
+    in Postgres before ranking ever sees it.</p>
 
   <form id="search-form" class="searchbar" autocomplete="off">
     <label class="sr-only" for="q">Describe your trip</label>
@@ -50,10 +127,10 @@
     <button class="btn" type="submit" id="go">Search</button>
   </form>
   <div class="chips" id="examples">
-    <button type="button" class="chip">Beach stay in Crete with a pool</button>
-    <button type="button" class="chip">Ski chalet with sauna in the Alps</button>
     <button type="button" class="chip">Somewhere with a sauna</button>
     <button type="button" class="chip">Anywhere with a pool</button>
+    <button type="button" class="chip">Beach stay in Crete</button>
+    <button type="button" class="chip">Ski chalet in the Alps</button>
   </div>
 
   <div id="results-zone" class="hidden">
@@ -63,39 +140,10 @@
       <div id="results" class="grid-cards"></div>
       <aside class="panel">
         <h3>What the engine knows</h3>
-        <p class="fine">Session only. No account, no personal data, gone after seven
-          days. Book a few results and watch this fill in.</p>
+        <p class="fine">Session only. No account, nothing kept past seven days.</p>
         <div id="profile-body"><p class="fine">No signals yet. This session ranks cold.</p></div>
         <button id="reset-session" class="ghost">Forget this session</button>
       </aside>
-    </div>
-  </div>
-
-  <hr class="rule" style="margin:clamp(40px,7vh,80px) 0 clamp(22px,4vh,44px)">
-  <dl class="facts">
-    <div><dt>Scoring</dt><dd>55&thinsp;/&thinsp;30&thinsp;/&thinsp;15<small>Base relevance, personal fit, business rules. Explicit and arguable.</small></dd></div>
-    <div><dt>Rank 30 candidates</dt><dd>10.5&thinsp;µs<small>Rising to 91&thinsp;µs at the 200-item API maximum.</small></dd></div>
-    <div><dt>Profile store</dt><dd>7 days<small>Redis, keyed by an anonymous session id, no personal data.</small></dd></div>
-    <div><dt>Manual sorting</dt><dd>0<small>Merchandising is a bounded term in the score, not a human queue.</small></dd></div>
-  </dl>
-
-  <div class="cols" style="margin-top:clamp(26px,4vh,48px)">
-    <div>
-      <h4>Bounded, not unlimited</h4>
-      <p>The business term is capped, so a promoted listing can tip a close call
-        between comparable stays but cannot bury a clearly better match. Two
-        tests hold that line from both directions.</p>
-    </div>
-    <div>
-      <h4>Disclosed, not hidden</h4>
-      <p>Promoted results carry a visible label and a reason. If commercial
-        interest moved a result up the page, the page says so.</p>
-    </div>
-    <div>
-      <h4>Explainable by design</h4>
-      <p>A learned ranker would score better. It would also make the bound much
-        harder to guarantee, so the linear model is the baseline any replacement
-        has to beat while keeping it.</p>
     </div>
   </div>
 </main>

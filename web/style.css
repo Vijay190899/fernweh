@@ -382,6 +382,76 @@ body.scrolled .top { color: var(--ink); text-shadow: none; background: var(--pap
 .live-dot::after { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--good); margin-left: 7px; animation: pulse 1.8s infinite; }
 @keyframes pulse { 50% { opacity: .2; } }
 
+/* ---------- pill labels and centred blocks ---------- */
+.pill-label {
+  display: inline-block; margin: 0 0 14px; padding: 6px 15px;
+  border: 1px solid var(--ink-12); border-radius: 999px;
+  font-size: 11px; letter-spacing: .17em; text-transform: uppercase;
+  font-weight: 600; color: var(--ink-60); background: var(--surface, #fff);
+}
+.centred { text-align: center; }
+.centred .pill-label { margin-inline: auto; }
+.centred-lede { margin-inline: auto; }
+
+/* ---------- pipeline ---------- */
+.pipeline { margin-top: 8px; }
+.stages { list-style: none; margin: 22px 0 0; padding: 0; display: grid; gap: 10px; }
+.stage {
+  position: relative; border: 1px solid var(--ink-12); border-left: 3px solid var(--ink-12);
+  padding: 18px 20px 18px 62px; background: var(--paper);
+  transition: border-color .35s var(--ease), background .35s var(--ease), transform .35s var(--ease);
+}
+.stage-n {
+  position: absolute; left: 20px; top: 18px;
+  font-size: 13px; font-weight: 700; color: var(--ink-40); font-variant-numeric: tabular-nums;
+}
+.stage h4 { margin: 0 0 6px; font-size: 15.5px; font-weight: 700; }
+.stage p { margin: 0 0 10px; font-size: 14px; color: var(--ink-60); line-height: 1.45; max-width: 66ch; }
+.stage code {
+  display: inline-block; font-size: 12px; background: var(--card);
+  padding: 5px 10px; border-radius: 4px; color: var(--ink-60);
+}
+.stage.active { border-color: var(--ink); border-left-color: var(--ink); background: var(--card); transform: translateX(4px); }
+.stage.active .stage-n { color: var(--ink); }
+.stage.done { border-left-color: var(--good); }
+.src {
+  display: inline-block; margin-top: 10px; font-size: 12px; letter-spacing: .04em;
+  color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--ink-12);
+  padding-bottom: 2px;
+}
+.src:hover { border-bottom-color: var(--ink); }
+.src::after { content: " ↗"; color: var(--ink-40); }
+.src.inline { margin: 0; }
+
+/* ---------- honesty note ---------- */
+.honesty { border: 1px solid var(--ink-12); border-left: 3px solid var(--warn); padding: 20px 22px; margin-top: 26px; }
+.honesty h4 { margin: 0 0 12px; font-size: 14px; font-weight: 700; }
+.honesty ul { margin: 0; padding-left: 18px; }
+.honesty li { font-size: 14px; color: var(--ink-60); line-height: 1.5; margin-bottom: 9px; }
+.honesty strong { color: var(--ink); }
+
+/* ---------- before / after comparison ---------- */
+.compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: clamp(24px, 4vh, 44px); }
+.compare-card { border: 1px solid var(--ink-12); border-radius: var(--r); padding: 20px; background: var(--paper); display: flex; flex-direction: column; }
+.compare-card.bad { border-color: rgba(163, 52, 31, .28); }
+.compare-card.good { border-color: rgba(31, 111, 69, .3); }
+.compare-card header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.compare-card header h4 { margin: 0; font-size: 15.5px; font-weight: 700; }
+.compare-card header .fine { margin: 2px 0 0; }
+.mark { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; flex: none; }
+.mark-sm { display: inline-block; width: 15px; font-size: 11px; }
+.bad-mark { color: var(--bad); background: rgba(163, 52, 31, .1); }
+.good-mark { color: var(--good); background: rgba(31, 111, 69, .1); }
+.mark-sm.bad-mark, .mark-sm.good-mark { background: none; }
+.field { border: 1px solid var(--ink-12); border-radius: var(--r); padding: 13px 15px; margin-bottom: 10px; }
+.field-label { margin: 0 0 7px; font-size: 11px; letter-spacing: .13em; text-transform: uppercase; font-weight: 600; color: var(--ink-40); }
+.field-body { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--ink-60); }
+.amenities { display: flex; flex-wrap: wrap; gap: 5px; }
+.amenity { font-size: 11.5px; border: 1px solid var(--ink-12); border-radius: 3px; padding: 4px 8px; color: var(--ink-60); }
+.compare-card footer { margin-top: auto; padding-top: 14px; font-size: 13px; color: var(--ink-60); line-height: 1.45; }
+
+@media (max-width: 860px) { .compare { grid-template-columns: 1fr; } }
+
 /* ---------- footer ---------- */
 .foot { border-top: 1px solid var(--ink-12); padding: 26px 0 40px; margin-top: 40px; }
 .foot-inner { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; font-size: 12px; color: var(--ink-40); }
