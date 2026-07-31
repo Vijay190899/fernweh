@@ -1,4 +1,4 @@
-// Package ranking personalizes result order from session behavior — no
+﻿// Package ranking personalizes result order from session behavior, no
 // accounts, no PII, just what this visitor did in this session (and a TTL so
 // even that evaporates). Personalization is bounded by business rules and
 // every score comes with human-readable reasons.
@@ -82,7 +82,7 @@ type Profile struct {
 }
 
 // Load builds the profile from raw counters. A brand-new session yields a
-// zero profile — the scorer treats that as "no personalization".
+// zero profile, the scorer treats that as "no personalization".
 func (s *SignalStore) Load(ctx context.Context, sessionID string) (Profile, error) {
 	raw, err := s.rdb.HGetAll(ctx, profileKey(sessionID)).Result()
 	if err != nil {

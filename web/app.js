@@ -1,4 +1,4 @@
-/* Fernweh demo UI — vanilla JS, talks to the gateway API only. */
+﻿/* Fernweh demo UI, vanilla JS, talks to the gateway API only. */
 "use strict";
 
 const $ = (sel) => document.querySelector(sel);
@@ -92,7 +92,7 @@ form.addEventListener("submit", async (e) => {
     }
     document.querySelector("#results-zone").scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (err) {
-    $("#results").innerHTML = `<div class="error-note">Search failed (${err.message}). The stack may still be starting — try again in a few seconds.</div>`;
+    $("#results").innerHTML = `<div class="error-note">Search failed (${err.message}). The stack may still be starting, try again in a few seconds.</div>`;
   } finally {
     $("#go").disabled = false;
   }

@@ -1,6 +1,6 @@
-// Package httpx is the shared HTTP plumbing: server lifecycle with graceful
+﻿// Package httpx is the shared HTTP plumbing: server lifecycle with graceful
 // shutdown, JSON helpers, health endpoints, and a traced client. Plain
-// net/http — Go 1.22+ routing makes a framework unnecessary.
+// net/http, Go 1.22+ routing makes a framework unnecessary.
 package httpx
 
 import (

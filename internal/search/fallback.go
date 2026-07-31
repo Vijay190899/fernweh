@@ -1,4 +1,4 @@
-package search
+﻿package search
 
 import (
 	"regexp"
@@ -8,7 +8,7 @@ import (
 )
 
 // FallbackParser is the deterministic intent extractor: a lexicon + rules.
-// It exists so the platform keeps answering when the LLM cannot — same
+// It exists so the platform keeps answering when the LLM cannot, same
 // contract, no dependencies, microsecond latency. It also defines the ground
 // truth the LLM extractor is validated against in tests.
 type FallbackParser struct{}
@@ -111,7 +111,7 @@ var (
 )
 
 // Parse extracts intent with rules only. Always succeeds; empty intent means
-// "show me anything good". Lexicon matching is word-boundary based — plain
+// "show me anything good". Lexicon matching is word-boundary based, plain
 // substring matching turns "romantic" into a trip to Rome.
 func (FallbackParser) Parse(query string) Intent {
 	q := " " + strings.ToLower(strings.TrimSpace(query)) + " "

@@ -1,4 +1,4 @@
-// Package enrich fills content gaps in inventory: an Asynq-queued pipeline
+﻿// Package enrich fills content gaps in inventory: an Asynq-queued pipeline
 // that scans for thin listings, generates descriptions and amenities from
 // facts already on the listing (never invented claims), and records every
 // change in an audit trail.
@@ -42,12 +42,12 @@ func NewAIGenerator(client *llm.Client) *AIGenerator {
 }
 
 const genSystemPrompt = `You improve travel listing content. You will receive the
-structured facts of one listing. Write marketing copy using ONLY those facts —
+structured facts of one listing. Write marketing copy using ONLY those facts -
 never invent pools, views, distances, or claims not present in the input.
 Reply with ONLY a JSON object:
   description: 2-3 sentences, warm but factual, mention destination and category
   amenities: the input amenities, optionally extended ONLY with items clearly
-    implied by the input (e.g. "spa" implies "massage" is NOT allowed — only
+    implied by the input (e.g. "spa" implies "massage" is NOT allowed, only
     add what is strictly implied, or return the input list unchanged)`
 
 func (g *AIGenerator) Generate(ctx context.Context, l inventory.Listing) (Generated, error) {
@@ -121,7 +121,7 @@ var monthNames = []string{"", "January", "February", "March", "April", "May", "J
 
 func (TemplateGenerator) Generate(_ context.Context, l inventory.Listing) (Generated, error) {
 	var b strings.Builder
-	fmt.Fprintf(&b, "%s welcomes guests to %s, %s — a %s stay rated %.1f by %d travelers.",
+	fmt.Fprintf(&b, "%s welcomes guests to %s, %s, a %s stay rated %.1f by %d travelers.",
 		l.Name, l.Destination, l.Country, l.Category, l.Rating, l.ReviewCount)
 	if len(l.Amenities) > 0 {
 		fmt.Fprintf(&b, " On site: %s.", strings.Join(l.Amenities, ", "))
