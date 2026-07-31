@@ -149,6 +149,23 @@ Postgres queries plus Redis lookups, nowhere near saturation on a laptop.
 The entire no-LLM decision path (parse + ladder + rank) costs under 50µs per
 request. Request latency lives in the database, where it belongs.
 
+### Cost control
+
+The AI layer is metered rather than hoped about. One client owns all model
+access and spends against a daily counter in Redis, so a public demo cannot
+drain an API balance:
+
+| Call | Tokens (in/out) | Cost at Haiku 4.5 rates |
+|---|---|---:|
+| Intent extraction | ~385 / ~50 | $0.00064 per uncached query |
+| Content enrichment | ~335 / ~120 | $0.00094 per listing |
+| Full enrichment sweep | 126 listings | ~$0.12 |
+
+Intent results cache in Redis for 24 hours, so repeat queries and the example
+chips cost nothing after the first call. The shipped default of 500 calls per
+day caps worst-case spend near $0.32 per day, and the platform keeps working
+at full function past the cap because the deterministic paths take over.
+
 ### Resilience checks, run by hand
 
 - `docker compose stop ranking` mid-session: searches keep answering,
