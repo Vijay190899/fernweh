@@ -29,6 +29,8 @@ type Config struct {
 	EnrichURL   string
 	JaegerUIURL string
 
+	HeartbeatURL string
+
 	RateLimitRPS   float64
 	RateLimitBurst int
 }
@@ -50,6 +52,7 @@ func Load(service string) Config {
 		RankingURL:     getStr("RANKING_URL", "http://localhost:8082"),
 		EnrichURL:      getStr("ENRICH_URL", "http://localhost:8083"),
 		JaegerUIURL:    getStr("JAEGER_UI_URL", "http://localhost:16686"),
+		HeartbeatURL:   os.Getenv("BETTERSTACK_HEARTBEAT_URL"),
 		RateLimitRPS:   getFloat("RATE_LIMIT_RPS", 5),
 		RateLimitBurst: getInt("RATE_LIMIT_BURST", 15),
 	}

@@ -10,6 +10,7 @@ import (
 
 	fernweh "fernweh"
 	"fernweh/internal/gateway"
+	"fernweh/internal/platform/betterstack"
 	"fernweh/internal/platform/config"
 	"fernweh/internal/platform/httpx"
 	"fernweh/internal/platform/logging"
@@ -35,6 +36,8 @@ func main() {
 		log.Error("static assets missing", "err", err)
 		os.Exit(1)
 	}
+
+	go betterstack.Heartbeat(context.Background(), cfg.HeartbeatURL, time.Minute, log)
 
 	mux := gateway.NewMux(cfg, static, log)
 	srv := httpx.NewServer(config.Addr("GATEWAY_ADDR", ":8080"), service, mux)

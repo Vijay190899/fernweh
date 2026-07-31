@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"fernweh/internal/inventory"
+	"fernweh/internal/platform/betterstack"
 	"fernweh/internal/platform/config"
 	"fernweh/internal/platform/db"
 	"fernweh/internal/platform/httpx"
@@ -61,6 +62,8 @@ func main() {
 		}
 		return rdb.Ping(ctx).Err()
 	})
+
+	go betterstack.Heartbeat(context.Background(), cfg.HeartbeatURL, time.Minute, log)
 
 	srv := httpx.NewServer(config.Addr("SEARCH_ADDR", ":8081"), service, mux)
 	if err := httpx.Serve(srv, log); err != nil {
