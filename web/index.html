@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -19,18 +19,16 @@
     <a href="/content/">Content</a>
   </nav>
   <div class="right">
-    <a href="#build">The build</a>
     <a href="https://github.com/Vijay190899/fernweh" target="_blank" rel="noopener">GitHub</a>
   </div>
 </header>
 
 <!-- ================= PORTAL =================
-     A tall scroll container with a pinned stage inside it. Scrolling first
-     swings the door open, then flies the whole scene past the camera so the
-     viewer passes through the opening and arrives among the products. -->
+     A tall container with a pinned stage inside it. Scrolling swings the door
+     open, then flies the scene past the camera so the viewer passes through
+     the opening and lands among the products below. -->
 <section class="portal" id="portal">
  <div class="portal-stage">
-
   <div class="scene" id="scene">
     <div class="hero-bg"></div>
 
@@ -42,127 +40,72 @@
     </div>
 
     <div class="hero-top">
-      <p class="label">A working travel platform, not a mockup</p>
       <h1 class="d1">Step into a world<br>of <em>discoveries</em></h1>
-    </div>
-
-    <div class="hero-copy">
-      <p class="lede">Three services behind one sentence of plain language: search
-        that never dead-ends, ranking that explains itself, and inventory that
-        repairs its own content.</p>
     </div>
 
     <div class="scroll-cue label" aria-hidden="true">Scroll to open the door</div>
   </div>
-
-  <!-- Beyond the doorway. -->
-  <div class="reveal" id="reveal">
-    <div class="shell">
-      <p class="label" style="margin:0 0 14px">Three products, each one live</p>
-      <div class="products">
-    <a class="product" href="/search/">
-      <img src="/img/santorini2.jpg" alt="">
-      <span class="corner label">01 · Search</span>
-      <div class="product-body">
-        <p class="label">Natural language</p>
-        <h3>Understanding beats filtering</h3>
-        <p>One sentence becomes a validated intent, then a query against live
-          inventory. Over-constrained searches relax in a fixed order and say
-          exactly what they changed.</p>
-        <span class="go">Open the demo</span>
-      </div>
-    </a>
-
-    <a class="product" href="/recommendations/">
-      <img src="/img/santorini.jpg" alt="">
-      <span class="corner label">02 · Recommendations</span>
-      <div class="product-body">
-        <p class="label">Personalization</p>
-        <h3>Ordered for you, still honest</h3>
-        <p>Clicks and bookings build a session profile that reorders results.
-          Merchandising rules are bounded, so a promotion can tip a close call
-          but never bury a better match.</p>
-        <span class="go">Open the demo</span>
-      </div>
-    </a>
-
-    <a class="product" href="/content/">
-      <img src="/img/alps.jpg" alt="">
-      <span class="corner label">03 · Content</span>
-      <div class="product-body">
-        <p class="label">Enrichment API</p>
-        <h3>Inventory that repairs itself</h3>
-        <p>Supplier feeds arrive with holes. A scanner finds them, a queue
-          distributes the work, and a worker writes copy grounded only in facts
-          already on the listing.</p>
-        <span class="go">Open the demo</span>
-      </div>
-    </a>
-      </div>
-    </div>
-  </div>
-
  </div>
 </section>
 
-<!-- ================= WHAT THIS IS ================= -->
 <main>
+<!-- ================= PRODUCTS ================= -->
+<section class="section shell" id="products">
+  <h2 class="d2" style="margin-bottom:clamp(26px,5vh,58px)">The Products</h2>
+
+  <article class="prow reveal-on-scroll">
+    <div class="prow-media"><img src="/img/santorini2.jpg" alt="Whitewashed cliffside town at dusk"></div>
+    <div class="prow-panel">
+      <p class="label">01 · Search</p>
+      <h3 class="d3">Understanding<br><em>beats filtering.</em></h3>
+      <p>One sentence becomes a validated intent, then a query against live
+        inventory. Over-constrained searches relax in a fixed order and say
+        exactly what they changed, so a traveller never meets an empty page.</p>
+      <a class="btn" href="/search/">Open the demo</a>
+    </div>
+  </article>
+
+  <article class="prow reverse reveal-on-scroll">
+    <div class="prow-media"><img src="/img/santorini.jpg" alt="Village above the sea"></div>
+    <div class="prow-panel">
+      <p class="label">02 · Recommendations</p>
+      <h3 class="d3">Ordered for you.<br><em>Still honest.</em></h3>
+      <p>Clicks and bookings build a session profile that reorders results, and
+        every card carries the reason it ranked where it did. Merchandising is
+        bounded, so a promotion can tip a close call but never bury a better
+        match.</p>
+      <a class="btn" href="/recommendations/">Open the demo</a>
+    </div>
+  </article>
+
+  <article class="prow reveal-on-scroll">
+    <div class="prow-media"><img src="/img/alps.jpg" alt="Snow-covered alpine peak"></div>
+    <div class="prow-panel">
+      <p class="label">03 · Content</p>
+      <h3 class="d3">Inventory that<br><em>repairs itself.</em></h3>
+      <p>Supplier feeds arrive with holes. A scanner finds them, a queue
+        distributes the work, and a worker writes copy grounded strictly in
+        facts already on the listing. Every change is audited.</p>
+      <a class="btn" href="/content/">Open the demo</a>
+    </div>
+  </article>
+</section>
+
+<!-- ================= NUMBERS ================= -->
 <section class="section shell" id="build">
-  <hr class="rule">
-  <div class="section-head" style="margin-top:clamp(22px,4vh,46px)">
-    <h2 class="d2">Built to be<br><em>taken apart.</em></h2>
-    <p class="lede muted">A Go monorepo with no web framework, four services, and one
-      trace that follows a job across a Redis queue into a worker. The same
-      Compose file runs on a laptop and in production.</p>
-  </div>
-
   <dl class="facts">
-    <div><dt>Services</dt><dd>4<small>Gateway, search, ranking, enrichment. One Go module, no framework.</small></dd></div>
-    <div><dt>Load tested</dt><dd>400<small>Requests per second, 15,498 requests, zero errors, p95 flat at 5 ms.</small></dd></div>
-    <div><dt>Fallback parse</dt><dd>14.8&thinsp;µs<small>The deterministic path, used whenever the model is unavailable.</small></dd></div>
-    <div><dt>Dead ends</dt><dd>0<small>Guaranteed by a relaxation ladder whose last rung has no constraints.</small></dd></div>
+    <div><dt>Services</dt><dd>4<small>Go monorepo, no framework</small></dd></div>
+    <div><dt>Load tested</dt><dd>400<small>Requests per second, zero errors, p95 at 5 ms</small></dd></div>
+    <div><dt>Fallback parse</dt><dd>14.8&thinsp;µs<small>Works with the model switched off</small></dd></div>
+    <div><dt>Dead ends</dt><dd>0<small>Guaranteed, not tuned</small></dd></div>
   </dl>
-
-  <div class="cols" style="margin-top:clamp(26px,4vh,48px)">
-    <div>
-      <h4>The AI is optional at runtime</h4>
-      <p>One client owns model access and meters spend against a daily budget.
-        Remove the key and every feature still works on deterministic paths,
-        and the response tells you which path served it.</p>
-    </div>
-    <div>
-      <h4>One trace across the queue</h4>
-      <p>Trace context is serialised into the task payload, so a scan, its Redis
-        hop, the worker and the database write appear as a single trace in
-        Jaeger. Every search response links its own.</p>
-    </div>
-    <div>
-      <h4>No QA team</h4>
-      <p>Table-driven tests cover every decision path, benchmarks cover the hot
-        ones, and a load generator produces the numbers above. The suite and the
-        traces are the QA.</p>
-    </div>
-    <div>
-      <h4>Built with Claude Code</h4>
-      <p>Specs first, invariants in <code>CLAUDE.md</code>, one reviewed pull
-        request per capability. The build log lists the bugs the model wrote and
-        exactly how each was caught.</p>
-    </div>
-  </div>
-
-  <p style="margin-top:clamp(26px,4vh,44px)">
+  <p style="margin-top:clamp(24px,4vh,40px)">
     <a class="btn" href="https://github.com/Vijay190899/fernweh" target="_blank" rel="noopener">Read the source</a>
-    <a class="btn light" href="/search/" style="margin-left:8px">Try the search</a>
   </p>
 </section>
 </main>
 
-<footer class="foot">
-  <div class="shell foot-inner">
-    <span>Built by Vijay Ananth with Claude Code</span>
-    <span>Go · PostgreSQL · Redis · Asynq · OpenTelemetry · Betterstack</span>
-  </div>
-</footer>
+<footer class="foot"></footer>
 
 <script src="/door.js" defer></script>
 </body>
