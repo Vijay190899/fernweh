@@ -37,7 +37,9 @@ func NewMux(cfg config.Config, staticFS fs.FS, log *slog.Logger) *http.ServeMux 
 	httpx.Health(mux, nil)
 
 	// Static frontend (embedded in the binary — one artifact, no CDN).
-	mux.Handle("GET /", securityHeaders(http.FileServerFS(staticFS)))
+	// Method-less on purpose: "GET /" would conflict with the method-less
+	// "/api/" subtree under Go 1.22 mux precedence rules.
+	mux.Handle("/", securityHeaders(http.FileServerFS(staticFS)))
 	return mux
 }
 
