@@ -1,0 +1,77 @@
+{
+  "personalized": {
+    "ndcg_at_10": 0.7597126559686082,
+    "precision_at_10": 0.8833333333333333,
+    "recall_at_10": 0.2913241242670323,
+    "map": 0.9629648001175779,
+    "diversity_at_10": 0.13333333333333333,
+    "catalogue_coverage": 0.19333333333333333
+  },
+  "baseline": {
+    "ndcg_at_10": 0.11120392069353323,
+    "precision_at_10": 0.09999999999999999,
+    "recall_at_10": 0.028656534102286833,
+    "map": 0.2617724867724868,
+    "diversity_at_10": 0.5,
+    "catalogue_coverage": 0.03333333333333333
+  },
+  "per_persona": {
+    "Alpine luxury": {
+      "ndcg_at_10": 0.8861107236627898,
+      "precision_at_10": 1,
+      "recall_at_10": 0.24390243902439024,
+      "map": 1,
+      "diversity_at_10": 0.1,
+      "catalogue_coverage": 0
+    },
+    "City on a budget": {
+      "ndcg_at_10": 0.6882864568479404,
+      "precision_at_10": 0.7,
+      "recall_at_10": 0.11666666666666667,
+      "map": 0.9087301587301587,
+      "diversity_at_10": 0.1,
+      "catalogue_coverage": 0
+    },
+    "Countryside table": {
+      "ndcg_at_10": 0.7407808155103878,
+      "precision_at_10": 0.9,
+      "recall_at_10": 0.3103448275862069,
+      "map": 0.9765432098765433,
+      "diversity_at_10": 0.1,
+      "catalogue_coverage": 0
+    },
+    "Family by the sea": {
+      "ndcg_at_10": 0.7383098888496451,
+      "precision_at_10": 1,
+      "recall_at_10": 0.16666666666666666,
+      "map": 1,
+      "diversity_at_10": 0.1,
+      "catalogue_coverage": 0
+    },
+    "Outdoors, unfussy": {
+      "ndcg_at_10": 0.7561600234585488,
+      "precision_at_10": 0.8,
+      "recall_at_10": 0.38095238095238093,
+      "map": 0.9159722222222222,
+      "diversity_at_10": 0.2,
+      "catalogue_coverage": 0
+    },
+    "Quiet wellness": {
+      "ndcg_at_10": 0.748628027482337,
+      "precision_at_10": 0.9,
+      "recall_at_10": 0.5294117647058824,
+      "map": 0.9765432098765433,
+      "diversity_at_10": 0.2,
+      "catalogue_coverage": 0
+    }
+  },
+  "catalogue_size": 300,
+  "personas": 6,
+  "generated_at": "2026-07-31T23:41:50Z",
+  "notes": [
+    "Relevance judgments come from declared synthetic personas, not from real users.",
+    "Click-through and conversion are omitted: they require live traffic and cannot be measured here.",
+    "Rating-error metrics (RMSE, MAE, MSE) do not apply; this system ranks and never predicts a rating.",
+    "Baseline is the identical scorer with an empty profile, which is what a first-time visitor gets."
+  ]
+}
