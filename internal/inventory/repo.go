@@ -155,6 +155,27 @@ func (r *Repo) ApplyEnrichment(ctx context.Context, id string, description strin
 	return tx.Commit(ctx)
 }
 
+// ResetForDemo puts a slice of already-enriched inventory back into a broken
+// state so the enrichment pipeline can be watched running more than once.
+// Purely a demo affordance; a real platform would never do this, which is why
+// it is bounded and named for what it is.
+func (r *Repo) ResetForDemo(ctx context.Context, n int) (int, error) {
+	if n <= 0 || n > 200 {
+		n = 60
+	}
+	tag, err := r.pool.Exec(ctx, `
+		UPDATE listings SET description = NULL, content_status = $1,
+		       content_hash = NULL, updated_at = now()
+		WHERE id IN (
+			SELECT id FROM listings WHERE content_status = $2
+			ORDER BY random() LIMIT $3
+		)`, StatusNeedsEnrichment, StatusEnriched, n)
+	if err != nil {
+		return 0, err
+	}
+	return int(tag.RowsAffected()), nil
+}
+
 // ContentStats summarizes inventory completeness for the ops dashboard.
 type ContentStats struct {
 	Total    int            `json:"total"`

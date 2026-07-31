@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Search · Fernweh</title>
+<meta name="description" content="Natural-language travel search with no dead ends. One sentence becomes a validated intent, then a query against live inventory.">
+<link rel="preload" href="/fonts/Archivo.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23010101'/><path d='M9 24V8h11v3h-7v3.6h6.2v3H13V24Z' fill='%23f1f1f1'/></svg>">
+</head>
+<body class="scrolled">
+
+<header class="top">
+  <a class="wordmark" href="/">Fernweh<br>Travel&nbsp;AI</a>
+  <nav>
+    <a href="/search/" aria-current="page">Search</a>
+    <a href="/recommendations/">Recommendations</a>
+    <a href="/content/">Content</a>
+  </nav>
+  <div class="right">
+    <a href="/">Overview</a>
+    <a href="https://github.com/Vijay190899/fernweh" target="_blank" rel="noopener">GitHub</a>
+  </div>
+</header>
+
+<section class="page-hero">
+  <img src="/img/santorini2.jpg" alt="">
+  <div class="page-hero-copy shell">
+    <p class="label">01 — AI Search</p>
+    <h1 class="d2">Understanding<br><em>beats filtering.</em></h1>
+  </div>
+</section>
+
+<main class="shell section">
+  <div class="section-head">
+    <p class="lede">Write a trip the way you would say it out loud. A model turns it
+      into a validated intent, and that intent queries live inventory. If the
+      model is unavailable, over budget or slow, a deterministic parser answers
+      instead and the response tells you which path served it.</p>
+    <p class="lede muted">Try an impossible one, like a five-star chalet in Zermatt
+      under fifty euro. It will still return results, and it will tell you exactly
+      which constraints it relaxed to find them.</p>
+  </div>
+
+  <form id="search-form" class="searchbar" autocomplete="off">
+    <label class="sr-only" for="q">Describe your trip</label>
+    <input id="q" name="q" type="text" maxlength="500" placeholder="A beach weekend under €1,000 in March">
+    <button class="btn" type="submit" id="go">Search</button>
+  </form>
+  <div class="chips" id="examples">
+    <button type="button" class="chip">A beach weekend under €1,000 in March</button>
+    <button type="button" class="chip">Family hotel in Crete with kids club, 4 stars</button>
+    <button type="button" class="chip">Städtetrip nach Wien im Oktober, ruhig und günstig</button>
+    <button type="button" class="chip">5-star ski chalet in Zermatt under €50</button>
+    <button type="button" class="chip">Somewhere warm and quiet in late spring, good food</button>
+  </div>
+
+  <div id="results-zone" class="hidden">
+    <div id="meta" class="meta"></div>
+    <div id="relaxations" class="notice hidden"></div>
+    <div class="results-layout">
+      <div id="results" class="grid-cards"></div>
+      <aside class="panel">
+        <h3>What the engine knows</h3>
+        <p class="fine">Session only. No account, nothing kept past seven days.
+          Open and book results to teach it, then see it work on the
+          <a href="/recommendations/">recommendations</a> page.</p>
+        <div id="profile-body"><p class="fine">No signals yet. This session ranks cold.</p></div>
+        <button id="reset-session" class="ghost">Forget this session</button>
+      </aside>
+    </div>
+  </div>
+
+  <hr class="rule" style="margin:clamp(40px,7vh,80px) 0 clamp(22px,4vh,44px)">
+  <dl class="facts">
+    <div><dt>Intent extraction</dt><dd>385&thinsp;/&thinsp;50<small>Input and output tokens per uncached query, about $0.00064.</small></dd></div>
+    <div><dt>Fallback parse</dt><dd>14.8&thinsp;µs<small>Word-boundary lexicon, English and German, zero network.</small></dd></div>
+    <div><dt>Relaxation ladder</dt><dd>1.3&thinsp;µs<small>Style, amenities, rating, budget, dates, place, category.</small></dd></div>
+    <div><dt>Empty pages</dt><dd>0<small>The last rung of the ladder carries no constraints at all.</small></dd></div>
+  </dl>
+</main>
+
+<footer class="foot">
+  <div class="shell foot-inner">
+    <span>Built by Vijay Ananth with Claude Code</span>
+    <span>Go · PostgreSQL · Redis · OpenTelemetry</span>
+  </div>
+</footer>
+
+<script src="/app.js" defer></script>
+</body>
+</html>

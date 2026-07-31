@@ -17,6 +17,7 @@ type AdminStore interface {
 	Store
 	Stats(ctx context.Context) (inventory.ContentStats, error)
 	RecentAudit(ctx context.Context, listingID string, limit int) ([]inventory.AuditEntry, error)
+	ResetForDemo(ctx context.Context, n int) (int, error)
 }
 
 // Handler is the enrichment admin API: stats, manual scan, before/after audit.
@@ -36,6 +37,20 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/enrich/scan", h.scan)
 	mux.HandleFunc("GET /v1/enrich/listings", h.listings)
 	mux.HandleFunc("GET /v1/enrich/listings/{id}/audit", h.audit)
+	mux.HandleFunc("POST /v1/enrich/demo-reset", h.demoReset)
+}
+
+// demoReset re-breaks a bounded slice of inventory so the pipeline can be
+// demonstrated repeatedly. Without it the queue drains once and the most
+// legible part of this service can never be shown again.
+func (h *Handler) demoReset(w http.ResponseWriter, r *http.Request) {
+	n, err := h.store.ResetForDemo(r.Context(), 60)
+	if err != nil {
+		httpx.Error(w, http.StatusInternalServerError, "reset failed")
+		return
+	}
+	h.log.InfoContext(r.Context(), "demo inventory reset", "listings", n)
+	httpx.JSON(w, http.StatusOK, map[string]int{"reset": n})
 }
 
 func (h *Handler) stats(w http.ResponseWriter, r *http.Request) {
