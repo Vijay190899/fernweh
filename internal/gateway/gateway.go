@@ -85,9 +85,13 @@ func securityHeaders(next http.Handler) http.Handler {
 		h.Set("X-Content-Type-Options", "nosniff")
 		h.Set("X-Frame-Options", "DENY")
 		h.Set("Referrer-Policy", "no-referrer")
+		// Everything the page needs ships with the binary: no external image
+		// host, no font CDN, no script origin beyond self.
 		h.Set("Content-Security-Policy",
-			"default-src 'self'; img-src 'self' https://picsum.photos https://fastly.picsum.photos data:; "+
-				"style-src 'self' 'unsafe-inline'; script-src 'self'")
+			"default-src 'self'; img-src 'self' data:; font-src 'self'; "+
+				"style-src 'self' 'unsafe-inline'; script-src 'self'; "+
+				"connect-src 'self'; base-uri 'none'; form-action 'self'; "+
+				"frame-ancestors 'none'")
 		next.ServeHTTP(w, r)
 	})
 }
