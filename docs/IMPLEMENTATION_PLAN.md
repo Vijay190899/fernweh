@@ -1,4 +1,4 @@
-﻿# Fernweh, Implementation Plan
+# Fernweh, Implementation Plan
 
 ## Monorepo layout (single Go module, no framework)
 

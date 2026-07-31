@@ -60,11 +60,12 @@
     const progress = clamp01((window.scrollY - portal.offsetTop) / (travel || 1));
 
     // Phase one: the panel swings.
-    const swing = easeInOut(clamp01(progress / 0.45));
+    const swing = easeInOut(clamp01(progress / 0.42));
     panel.style.setProperty("--door", swing.toFixed(4));
 
-    // Phase two: push through the opening.
-    const push = easeOut(clamp01((progress - 0.4) / 0.6));
+    // Phase two: push through the opening. Finishes before the container
+    // ends so the products are already arriving as the stage releases.
+    const push = easeOut(clamp01((progress - 0.36) / 0.52));
     // Scale is exponential so it accelerates the way approaching a doorway
     // actually looks, rather than creeping linearly.
     scene.style.setProperty("--zoom", (1 + push * push * 7).toFixed(4));
