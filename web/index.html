@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fernweh — AI travel search demo</title>
-<meta name="description" content="Natural-language travel search with zero dead ends, personalized ranking, and self-healing content — a Go microservices demo.">
+<title>Fernweh · AI travel search demo</title>
+<meta name="description" content="Natural-language travel search with zero dead ends, personalized ranking, and self-healing content. A Go microservices demo.">
 <link rel="stylesheet" href="/style.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧭</text></svg>">
 </head>
@@ -29,8 +29,9 @@
 <!-- ============ SEARCH VIEW ============ -->
 <main id="view-search" class="view wrap">
   <section class="hero">
-    <h1>Say it like you'd say it to a friend.</h1>
-    <p class="sub">One sentence in, bookable trips out — no filters, no dead ends. English or German.</p>
+    <canvas id="globe" aria-hidden="true"></canvas>
+    <h1>Search the way <em>you</em> talk.</h1>
+    <p class="sub">One sentence in, bookable trips out. No filter walls, no empty result pages. English or German.</p>
     <form id="search-form" class="searchbar" autocomplete="off">
       <input id="q" type="text" maxlength="500" placeholder="A beach weekend under €1,000 in March…" aria-label="Describe your trip">
       <button type="submit" id="go">Search</button>
@@ -51,8 +52,8 @@
       <div id="results" class="grid"></div>
       <aside class="profile-panel" id="profile-panel">
         <h3>What the engine knows about you</h3>
-        <p class="fine">Session-only, no account, gone in 7 days. Click and “book” results to teach it.</p>
-        <div id="profile-body"><p class="fine dim">No signals yet — this session ranks cold.</p></div>
+        <p class="fine">Session only. No account, nothing stored past 7 days. Click and book results to teach it.</p>
+        <div id="profile-body"><p class="fine dim">No signals yet. This session ranks cold.</p></div>
         <button id="reset-session" class="ghost">Forget me (new session)</button>
       </aside>
     </div>
@@ -63,8 +64,8 @@
 <main id="view-ops" class="view wrap hidden">
   <section class="ops-head">
     <div>
-      <h1>Content enrichment, running itself.</h1>
-      <p class="sub">40% of the seeded inventory arrived with missing or thin content — the pipeline finds gaps, queues them, and writes fact-grounded copy. Every change is audited.</p>
+      <h1>Content that fixes itself.</h1>
+      <p class="sub">40% of the seeded inventory arrived with missing or thin content. The pipeline finds the gaps, queues them, and writes copy grounded in listing facts. Every change is audited.</p>
     </div>
     <button id="scan-btn">Run scan now</button>
   </section>
@@ -84,7 +85,7 @@
 <!-- ============ HOW VIEW ============ -->
 <main id="view-how" class="view wrap hidden">
   <h1>Under the hood</h1>
-  <p class="sub">Four Go services, no web framework, one trace per request — the same operational shape as a production travel platform.</p>
+  <p class="sub">Four Go services, no web framework, one trace per request. The same operational shape as a production travel platform.</p>
 
   <div class="arch">
     <div class="arch-row">
@@ -92,8 +93,8 @@
     </div>
     <div class="arch-flow">│</div>
     <div class="arch-row">
-      <div class="node">Search<span>NL → intent → SQL · relaxation ladder</span></div>
-      <div class="node">Ranking<span>session signals · bounded biz rules</span></div>
+      <div class="node">Search<span>language → intent → SQL · relaxation ladder</span></div>
+      <div class="node">Ranking<span>session signals · bounded business rules</span></div>
       <div class="node">Enrich<span>Asynq workers · audit trail</span></div>
     </div>
     <div class="arch-flow">│</div>
@@ -107,19 +108,19 @@
   <div class="how-cards">
     <div class="how-card">
       <h3>⚡ The AI is optional at runtime</h3>
-      <p>Intent extraction and content generation go through one LLM door with a daily budget cap. No key, cap hit, provider down? Deterministic fallbacks answer instead — search never breaks, and the response tells you which path served it (watch the <em>engine</em> badge).</p>
+      <p>Intent extraction and content generation go through one LLM door with a daily budget cap. No key, cap reached, provider down? Deterministic fallbacks answer instead. Search never breaks, and the response says which path served it (watch the engine badge).</p>
     </div>
     <div class="how-card">
       <h3>🪜 Zero dead ends, honestly</h3>
-      <p>Over-constrained queries relax stepwise — style → amenities → budget +15/30% → dates → place — and every relaxation is disclosed in the yellow banner. No silent result-stuffing.</p>
+      <p>Over-constrained queries relax stepwise: style, then amenities, then budget by 15/30%, then dates, then place. Every relaxation is disclosed in the yellow banner. No silent result stuffing.</p>
     </div>
     <div class="how-card">
       <h3>🔍 One trace across the queue</h3>
-      <p>Trace context rides inside Asynq task payloads, so scan → Redis → worker → Postgres shows as a single Jaeger trace. Each search response carries its trace id — click it.</p>
+      <p>Trace context rides inside Asynq task payloads, so scan, Redis, worker, and Postgres show as a single Jaeger trace. Each search response carries its trace id. Click it.</p>
     </div>
     <div class="how-card">
       <h3>🛡️ Safe to run in public</h3>
-      <p>Per-IP token buckets, body-size caps, a platform-wide daily LLM budget in Redis, security headers, and internal services that the internet can't reach.</p>
+      <p>Per-IP token buckets, body-size caps, a platform-wide daily LLM budget in Redis, security headers, and internal services the internet cannot reach. Logs ship to Betterstack when configured.</p>
     </div>
   </div>
 
@@ -127,15 +128,16 @@
     <a id="jaeger-link" href="http://localhost:16686" target="_blank" rel="noopener">Open Jaeger ↗</a>
     <a href="https://github.com/Vijay190899/fernweh" target="_blank" rel="noopener">Source ↗</a>
     <a href="https://github.com/Vijay190899/fernweh/blob/main/docs/PRD.md" target="_blank" rel="noopener">PRD ↗</a>
-    <a href="https://github.com/Vijay190899/fernweh/blob/main/docs/BUILDLOG-claude-code.md" target="_blank" rel="noopener">How it was built with Claude Code ↗</a>
+    <a href="https://github.com/Vijay190899/fernweh/blob/main/docs/BUILDLOG-claude-code.md" target="_blank" rel="noopener">Build log ↗</a>
   </div>
 </main>
 
 <footer class="wrap foot">
-  Built by <strong>Vijay Ananth</strong> — an AI-first build with Claude Code ·
-  Go · PostgreSQL · Redis · Asynq · OpenTelemetry · no web framework
+  Built by <strong>Vijay Ananth</strong> with Claude Code ·
+  Go · PostgreSQL · Redis · Asynq · OpenTelemetry · Betterstack · no web framework
 </footer>
 
+<script src="/globe.js"></script>
 <script src="/app.js"></script>
 </body>
 </html>
