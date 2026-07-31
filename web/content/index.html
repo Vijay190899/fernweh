@@ -33,19 +33,67 @@
 </section>
 
 <main class="shell section">
-  <div class="section-head">
-    <p class="lede">Supplier feeds arrive with holes: no description, no amenities,
-      nothing to rank on. A scanner finds them, a queue distributes the work, and
-      a worker writes copy grounded strictly in facts already on the listing.
-      No invented pools, no invented views.</p>
-    <p class="lede muted">Press reset to put a slice of the catalogue back into a
-      broken state, then run a scan and watch the queue drain. Click any repaired
-      listing to see its before, its after, and which path produced it.</p>
+
+  <!-- ============ THE PROBLEM ============ -->
+  <div class="centred">
+    <p class="pill-label">The problem</p>
+    <h2 class="d3">Incomplete listings do not convert</h2>
+    <p class="lede muted centred-lede">Supplier feeds arrive with holes: no
+      description, no amenities, nothing to rank on. Those listings sit in the
+      catalogue unfindable and unbookable, and fixing them by hand does not
+      scale past a few hundred properties.</p>
   </div>
 
-  <p style="display:flex;gap:8px;flex-wrap:wrap">
-    <button id="scan-btn" class="btn">Run a scan</button>
+  <!-- Real before and after, read from the audit trail of a listing this
+       pipeline actually repaired. Nothing here is illustrative. -->
+  <div class="compare" id="compare">
+    <article class="compare-card bad">
+      <header><span class="mark bad-mark" aria-hidden="true">&#10005;</span>
+        <div><h4>As it arrived</h4><p class="fine" id="before-id">loading…</p></div>
+      </header>
+      <div class="field">
+        <p class="field-label"><span class="mark-sm bad-mark">&#10005;</span> Description</p>
+        <p class="field-body" id="before-desc">&mdash;</p>
+      </div>
+      <div class="field">
+        <p class="field-label"><span class="mark-sm bad-mark">&#10005;</span> Amenities</p>
+        <div class="amenities" id="before-amen">&mdash;</div>
+      </div>
+      <footer><strong>Unrankable.</strong> With no description and thin
+        attributes there is nothing for search to match a traveller against.</footer>
+    </article>
+
+    <article class="compare-card good">
+      <header><span class="mark good-mark" aria-hidden="true">&#10003;</span>
+        <div><h4>After enrichment</h4><p class="fine" id="after-src">&mdash;</p></div>
+      </header>
+      <div class="field">
+        <p class="field-label"><span class="mark-sm good-mark">&#10003;</span> Description</p>
+        <p class="field-body" id="after-desc">&mdash;</p>
+      </div>
+      <div class="field">
+        <p class="field-label"><span class="mark-sm good-mark">&#10003;</span> Amenities</p>
+        <div class="amenities" id="after-amen">&mdash;</div>
+      </div>
+      <footer><strong>Findable and bookable.</strong> Written only from facts
+        already on the listing, and every change recorded with its source.</footer>
+    </article>
+  </div>
+  <p class="fine" id="compare-note"></p>
+
+  <!-- ============ THE SOLUTION ============ -->
+  <hr class="rule" style="margin:clamp(46px,8vh,90px) 0 clamp(24px,4vh,44px)">
+  <div class="centred">
+    <p class="pill-label">The solution</p>
+    <h2 class="d3">Content that completes itself</h2>
+    <p class="lede muted centred-lede">A scanner finds the gaps, a queue
+      distributes the work, and a worker writes copy grounded strictly in facts
+      already on the listing. Run it yourself below.</p>
+  </div>
+
+  <p style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:26px">
     <button id="reset-demo" class="btn light">Break some listings again</button>
+    <button id="scan-btn" class="btn">Run a scan</button>
   </p>
 
   <div id="stat-tiles" class="tiles" style="margin-top:clamp(22px,4vh,42px)"></div>
@@ -61,34 +109,47 @@
     </div>
   </div>
 
-  <hr class="rule" style="margin:clamp(40px,7vh,80px) 0 clamp(22px,4vh,44px)">
-  <dl class="facts">
-    <div><dt>Template generation</dt><dd>910&thinsp;ns<small>The zero-budget path. Enrichment progresses with no model at all.</small></dd></div>
-    <div><dt>Per listing</dt><dd>$0.00094<small>With a model. Repairing all 126 seeded gaps costs about twelve cents.</small></dd></div>
-    <div><dt>Idempotency</dt><dd>2<small>A claim guard in SQL, and a content hash over the source facts.</small></dd></div>
-    <div><dt>Audit coverage</dt><dd>100%<small>Every write records before, after, and whether a model or template wrote it.</small></dd></div>
-  </dl>
+  <!-- ============ GUARANTEES ============ -->
+  <hr class="rule" style="margin:clamp(46px,8vh,90px) 0 clamp(24px,4vh,44px)">
+  <p class="pill-label">Guarantees</p>
+  <h2 class="d3" style="margin-bottom:clamp(20px,3vh,36px)">Why this is safe to run unattended</h2>
 
-  <div class="cols" style="margin-top:clamp(26px,4vh,48px)">
+  <div class="cols">
     <div>
-      <h4>Grounded, then checked</h4>
+      <h4>It cannot invent facts</h4>
       <p>The prompt receives only the listing's own fields and is told not to
         invent. The reply is then validated in code: every original amenity must
-        survive, and at most three may be added.</p>
+        survive and at most three may be added.
+        <a class="src inline" href="https://github.com/Vijay190899/fernweh/blob/main/internal/enrich/generator.go" target="_blank" rel="noopener">generator.go</a></p>
     </div>
     <div>
-      <h4>Safe to replay</h4>
+      <h4>It is safe to replay</h4>
       <p>A worker claims a listing with a compare-and-set in SQL, so two workers
         racing means one wins and the other cleanly skips. Overlapping scans are
-        deduplicated at enqueue time.</p>
+        deduplicated at enqueue time.
+        <a class="src inline" href="https://github.com/Vijay190899/fernweh/blob/main/internal/enrich/pipeline.go" target="_blank" rel="noopener">pipeline.go</a></p>
+    </div>
+    <div>
+      <h4>It works with no model</h4>
+      <p>If the model is unavailable or the daily budget is spent, a template
+        generator composes from the same facts. Enrichment keeps progressing at
+        zero cost, and the audit records which path wrote each field.</p>
     </div>
     <div>
       <h4>Failure stays visible</h4>
-      <p>Transient errors release the claim so the queue can retry with backoff.
-        Exhausted retries park the listing as failed, where this dashboard shows
+      <p>Transient errors release the claim so the queue retries with backoff.
+        Exhausted retries park the listing as failed, where the dashboard shows
         it rather than losing it silently.</p>
     </div>
   </div>
+
+  <hr class="rule" style="margin:clamp(40px,7vh,80px) 0 clamp(22px,4vh,44px)">
+  <dl class="facts">
+    <div><dt>Template generation</dt><dd>910&thinsp;ns<small>The zero-budget path</small></dd></div>
+    <div><dt>Per listing, with a model</dt><dd>$0.00094<small>All 126 seeded gaps cost about twelve cents</small></dd></div>
+    <div><dt>Idempotency guards</dt><dd>2<small>SQL claim, plus a content hash</small></dd></div>
+    <div><dt>Audit coverage</dt><dd>100%<small>Before, after, and which path wrote it</small></dd></div>
+  </dl>
 </main>
 
 <footer class="foot"></footer>

@@ -301,6 +301,111 @@ $("#reset-session")?.addEventListener("click", () => {
   $("#profile-body").innerHTML = '<p class="fine dim">Fresh session. The engine forgot you.</p>';
 });
 
+/* ---------- pipeline walkthrough ---------- */
+(function pipeline() {
+  const stages = $$("#stages .stage");
+  const play = $("#pipe-play");
+  if (!stages.length) return;
+
+  let timer = null;
+  const clear = () => stages.forEach((s) => s.classList.remove("active", "done"));
+
+  function run() {
+    clearInterval(timer);
+    clear();
+    let i = 0;
+    const step = () => {
+      if (i > 0) stages[i - 1].classList.replace("active", "done");
+      if (i >= stages.length) { clearInterval(timer); play.textContent = "Play again"; return; }
+      stages[i].classList.add("active");
+      stages[i].scrollIntoView({ block: "nearest", behavior: "smooth" });
+      i++;
+    };
+    step();
+    timer = setInterval(step, 1400);
+  }
+
+  play?.addEventListener("click", run);
+  // Hovering a stage highlights it without disturbing a run in progress.
+  stages.forEach((s) => s.addEventListener("mouseenter", () => {
+    if (!timer) { clear(); s.classList.add("active"); }
+  }));
+})();
+
+/* ---------- offline evaluation numbers ----------
+ * Read from the report committed by tools/rankeval, so the page can never
+ * show a figure that is not reproducible from the repository. */
+(function evaluation() {
+  const tiles = $("#eval-tiles");
+  if (!tiles) return;
+
+  fetch("/eval.json").then((r) => r.json()).then((d) => {
+    const p = d.personalized, b = d.baseline;
+    const lift = (a, c) => (c > 0 ? (a / c).toFixed(1) + "x" : "n/a");
+    const row = (label, val, sub) =>
+      `<div class="tile"><div class="n">${val}</div><div class="l">${label}</div>
+       <p class="fine" style="margin:8px 0 0">${sub}</p></div>`;
+
+    tiles.innerHTML =
+      row("NDCG@10", p.ndcg_at_10.toFixed(3), `baseline ${b.ndcg_at_10.toFixed(3)} · ${lift(p.ndcg_at_10, b.ndcg_at_10)}`) +
+      row("Precision@10", p.precision_at_10.toFixed(3), `baseline ${b.precision_at_10.toFixed(3)} · ${lift(p.precision_at_10, b.precision_at_10)}`) +
+      row("Recall@10", p.recall_at_10.toFixed(3), `baseline ${b.recall_at_10.toFixed(3)} · ${lift(p.recall_at_10, b.recall_at_10)}`) +
+      row("MAP@10", p.map.toFixed(3), `baseline ${b.map.toFixed(3)} · ${lift(p.map, b.map)}`) +
+      row("Coverage", Math.round(p.catalogue_coverage * 100) + "%", `of a ${Math.round((d.personas * 10 / d.catalogue_size) * 100)}% ceiling`) +
+      row("Diversity@10", p.diversity_at_10.toFixed(2), `baseline ${b.diversity_at_10.toFixed(2)} · by design`);
+
+    const meta = $("#eval-meta");
+    if (meta) {
+      meta.textContent = `Computed over ${d.catalogue_size} listings and ${d.personas} declared personas` +
+        (d.generated_at ? `, generated ${d.generated_at.slice(0, 10)}` : "") +
+        `. Regenerate with: go run ./tools/rankeval`;
+    }
+  }).catch(() => {
+    tiles.innerHTML = '<p class="fine">Evaluation report unavailable. Run <code>go run ./tools/rankeval</code> to generate it.</p>';
+  });
+})();
+
+/* ---------- real before and after ----------
+ * Pulled from the audit trail of a listing the pipeline actually repaired,
+ * so the comparison is evidence rather than an illustration. */
+(function comparison() {
+  if (!$("#compare")) return;
+
+  const chips = (csv) => {
+    let list = [];
+    try { list = JSON.parse(csv); } catch { list = String(csv || "").split(",").filter(Boolean); }
+    if (!list.length) return '<span class="fine">None listed</span>';
+    return list.map((a) => `<span class="amenity">${a}</span>`).join("");
+  };
+
+  api("/api/enrich/listings?status=enriched&limit=8").then(async ({ data }) => {
+    const listings = data.listings || [];
+    for (const l of listings) {
+      const { data: a } = await api(`/api/enrich/listings/${l.id}/audit`);
+      const desc = (a.audit || []).find((e) => e.field === "description");
+      const amen = (a.audit || []).find((e) => e.field === "amenities");
+      // Prefer an example whose description genuinely started empty.
+      if (!desc || (desc.before || "").trim().length > 40) continue;
+
+      $("#before-id").textContent = `${l.name} · ${l.destination}, ${l.country}`;
+      $("#before-desc").innerHTML = (desc.before || "").trim()
+        ? desc.before : '<em>Empty. Nothing supplied by the feed.</em>';
+      $("#before-amen").innerHTML = amen ? chips(amen.before) : '<span class="fine">None listed</span>';
+      $("#after-desc").textContent = desc.after;
+      $("#after-amen").innerHTML = amen ? chips(amen.after) : chips(JSON.stringify(l.amenities));
+      $("#after-src").textContent = desc.source === "ai"
+        ? `Written by ${desc.model || "the model"}` : "Written by the template path, no model used";
+      $("#compare-note").textContent =
+        `Listing ${l.id}, read live from the enrichment audit trail. Not an illustration.`;
+      return;
+    }
+    $("#compare-note").textContent =
+      "No repaired listing with an empty starting description is in the catalogue right now. Press “Break some listings again”, run a scan, then reload.";
+  }).catch(() => {
+    $("#compare-note").textContent = "Audit trail unavailable; is the stack running?";
+  });
+})();
+
 /* ================= OPS =================
  * The dashboard now lives inline on the page rather than behind a tab, so
  * polling starts when it scrolls into view and stops when it leaves. There is
