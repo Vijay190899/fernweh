@@ -203,15 +203,17 @@ internal/
 web/            demo UI: vanilla JS, hand-written WebGL globe, self-hosted
                 fonts, embedded into the gateway binary
 tools/loadgen/  load generator behind the numbers above
-deploy/         prod compose overlay · Caddy TLS · VM bootstrap script
+deploy/         production compose overlay (limits, restart policies)
 docs/           PRD · architecture · deployment · build log · chart assets
 ```
 
 ## Deploying
 
-Local mirrors production by design. Production is the same compose file plus
-a TLS edge and resource limits on a single free-tier VM:
-[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+Local mirrors production by design. Production runs the same compose stack
+under a container platform, so the services, PostgreSQL, Redis and Jaeger in
+production are the ones described here rather than substitutes. The platform
+handles TLS, health checks and rollbacks; a small overlay adds restart
+policies and memory limits: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ---
 

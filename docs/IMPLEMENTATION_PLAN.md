@@ -27,7 +27,7 @@ fernweh/
 ├── web/                    # static frontend (vanilla JS/CSS, no build step)
 ├── migrations/             # 00X_*.sql, embedded via go:embed
 ├── tools/loadgen/          # Go load generator
-├── deploy/                 # prod compose + Caddyfile + VM setup script
+├── deploy/                 # production compose overlay
 ├── docs/                   # PRD, this plan, architecture, deployment, build log
 ├── docker-compose.yml      # full local stack (mirrors prod)
 ├── Makefile
