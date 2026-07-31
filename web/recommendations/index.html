@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AI Recommendations Â· Fernweh</title>
+<title>AI Recommendations · Fernweh</title>
 <meta name="description" content="Session signals build a traveller profile that reorders results, with bounded merchandising rules and a reason on every card.">
 <link rel="preload" href="/fonts/Archivo.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/style.css">
@@ -16,7 +16,7 @@
   <nav>
     <a href="/search/">Search</a>
     <a href="/recommendations/" aria-current="page">Recommendations</a>
-    <a href="/content/">Content</a>
+    <a href="/content/">Content Enrichment</a>
   </nav>
   <div class="right">
     <a href="/">Overview</a>
@@ -27,7 +27,7 @@
 <section class="page-hero">
   <img src="/img/santorini.jpg" alt="">
   <div class="page-hero-copy shell">
-    <p class="label">02 Â· AI Recommendations</p>
+    <p class="label">02 · AI Recommendations</p>
     <h1 class="d2">Ordered for you.<br><em>Still honest.</em></h1>
   </div>
 </section>
@@ -37,21 +37,23 @@
     <p class="lede">Every view, click and booking becomes a weighted signal. Those
       build a session profile, and the profile reorders results. Each card carries
       the reason it ranked where it did.</p>
-    <p class="lede muted">Search below, open a few stays of the same kind, then search
-      something vague like â€œsomewhere nice in Mayâ€. The order will have changed,
-      and the panel on the right will tell you why.</p>
+    <p class="lede muted">Book a few stays of the same kind, then run a
+      deliberately vague search such as "somewhere with a sauna". The order
+      changes, every card states why it ranked where it did, and the panel on
+      the right shows what the engine inferred. Avoid pinning a month while
+      testing: it filters inventory before ranking ever sees it.</p>
   </div>
 
   <form id="search-form" class="searchbar" autocomplete="off">
     <label class="sr-only" for="q">Describe your trip</label>
-    <input id="q" name="q" type="text" maxlength="500" placeholder="Somewhere nice in May">
+    <input id="q" name="q" type="text" maxlength="500" placeholder="Somewhere with a sauna">
     <button class="btn" type="submit" id="go">Search</button>
   </form>
   <div class="chips" id="examples">
     <button type="button" class="chip">Beach stay in Crete with a pool</button>
     <button type="button" class="chip">Ski chalet with sauna in the Alps</button>
-    <button type="button" class="chip">Somewhere nice in May</button>
-    <button type="button" class="chip">Quiet countryside with good food</button>
+    <button type="button" class="chip">Somewhere with a sauna</button>
+    <button type="button" class="chip">Anywhere with a pool</button>
   </div>
 
   <div id="results-zone" class="hidden">
@@ -72,7 +74,7 @@
   <hr class="rule" style="margin:clamp(40px,7vh,80px) 0 clamp(22px,4vh,44px)">
   <dl class="facts">
     <div><dt>Scoring</dt><dd>55&thinsp;/&thinsp;30&thinsp;/&thinsp;15<small>Base relevance, personal fit, business rules. Explicit and arguable.</small></dd></div>
-    <div><dt>Rank 30 candidates</dt><dd>10.5&thinsp;Âµs<small>Rising to 91&thinsp;Âµs at the 200-item API maximum.</small></dd></div>
+    <div><dt>Rank 30 candidates</dt><dd>10.5&thinsp;µs<small>Rising to 91&thinsp;µs at the 200-item API maximum.</small></dd></div>
     <div><dt>Profile store</dt><dd>7 days<small>Redis, keyed by an anonymous session id, no personal data.</small></dd></div>
     <div><dt>Manual sorting</dt><dd>0<small>Merchandising is a bounded term in the score, not a human queue.</small></dd></div>
   </dl>

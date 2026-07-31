@@ -105,7 +105,10 @@ body.scrolled .top { color: var(--ink); text-shadow: none; background: var(--pap
    The container is tall; the stage inside it is sticky. Scroll distance
    through the container is the timeline: the door opens, then the scene
    rushes past the camera and the products are already there behind it. */
-.portal { position: relative; height: 340vh; }
+/* Height is the sequence's duration. It has to be short enough that the
+   animation finishes near the end of the container, or the stage sits pinned
+   and empty for a full viewport after the scene has already faded out. */
+.portal { position: relative; height: 200vh; }
 /* The stage sits on paper, so as the scene fades out at the end of the fly
    through the viewer lands on the same surface the products are laid out on
    and there is no seam between the sequence and the page. */
