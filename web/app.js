@@ -128,7 +128,7 @@ function renderMeta(data, traceId) {
 function renderRelaxations(relaxations) {
   const el = $("#relaxations");
   if (!relaxations || !relaxations.length) return;
-  el.innerHTML = `🪜 <strong>No exact matches — we adjusted:</strong> ${relaxations.join(" · ")}`;
+  el.innerHTML = `🪜 <strong>No exact matches, so we adjusted:</strong> ${relaxations.join(" · ")}`;
   el.classList.remove("hidden");
 }
 
@@ -161,7 +161,7 @@ function renderResults(results) {
     card.querySelector(".book").addEventListener("click", (e) => {
       e.stopPropagation();
       signal({ type: "book", ...attrs }).then(refreshProfile);
-      e.target.textContent = "✓ Noted — the engine learned";
+      e.target.textContent = "✓ Noted, the engine learned";
       e.target.classList.add("booked");
     });
     grid.appendChild(card);
@@ -174,7 +174,7 @@ async function refreshProfile() {
     const { data: p } = await api(`/api/profile/${session}`);
     const body = $("#profile-body");
     if (!p.events) {
-      body.innerHTML = '<p class="fine dim">No signals yet — this session ranks cold.</p>';
+      body.innerHTML = '<p class="fine dim">No signals yet. This session ranks cold.</p>';
       return;
     }
     const cats = Object.entries(p.category_affinity || {}).sort((a, b) => b[1] - a[1]).slice(0, 4);
@@ -190,7 +190,7 @@ async function refreshProfile() {
 $("#reset-session").addEventListener("click", () => {
   session = newSession();
   refreshProfile();
-  $("#profile-body").innerHTML = '<p class="fine dim">Fresh session — the engine forgot you.</p>';
+  $("#profile-body").innerHTML = '<p class="fine dim">Fresh session. The engine forgot you.</p>';
 });
 
 /* ================= OPS ================= */
@@ -249,7 +249,7 @@ function renderOpsRows(el, listings, withAudit) {
     el.appendChild(row);
   });
   if (!listings || !listings.length) {
-    el.innerHTML = '<div class="rowc"><div class="d">Nothing here — the pipeline caught up. Run a scan or wait for the next sweep.</div></div>';
+    el.innerHTML = '<div class="rowc"><div class="d">Nothing here. The pipeline caught up; run a scan or wait for the next sweep.</div></div>';
   }
 }
 
@@ -260,7 +260,7 @@ $("#scan-btn").addEventListener("click", async (e) => {
     const { data } = await api("/api/enrich/scan", { method: "POST" });
     e.target.textContent = `Queued ${data.enqueued} listings ✓`;
   } catch {
-    e.target.textContent = "Scan failed — retry";
+    e.target.textContent = "Scan failed, retry";
   }
   setTimeout(() => { e.target.disabled = false; e.target.textContent = "Run scan now"; }, 2500);
 });
