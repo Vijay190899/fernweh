@@ -1,6 +1,7 @@
 // Package logging configures structured JSON logging with automatic trace_id
-// correlation, so every log line can be joined against its Jaeger trace — the
-// pattern log shippers (Betterstack etc.) expect.
+// correlation, so every log line can be joined against its Jaeger trace.
+// When a Betterstack source token is configured, the same records also ship
+// to Betterstack Logs asynchronously; stdout stays the authoritative stream.
 package logging
 
 import (
@@ -9,13 +10,22 @@ import (
 	"os"
 
 	"go.opentelemetry.io/otel/trace"
+
+	"fernweh/internal/platform/betterstack"
 )
 
 // New returns a JSON slog.Logger tagged with the service name.
 func New(service string) *slog.Logger {
-	h := &traceHandler{Handler: slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+	var h slog.Handler = &traceHandler{Handler: slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelInfo,
 	})}
+	if token := os.Getenv("BETTERSTACK_LOG_TOKEN"); token != "" {
+		host := os.Getenv("BETTERSTACK_INGEST_HOST")
+		if host == "" {
+			host = "in.logs.betterstack.com"
+		}
+		h = betterstack.NewShipper(h, service, host, token)
+	}
 	return slog.New(h).With("service", service)
 }
 

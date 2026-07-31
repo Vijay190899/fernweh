@@ -13,6 +13,7 @@ import (
 
 	"fernweh/internal/enrich"
 	"fernweh/internal/inventory"
+	"fernweh/internal/platform/betterstack"
 	"fernweh/internal/platform/config"
 	"fernweh/internal/platform/db"
 	"fernweh/internal/platform/httpx"
@@ -90,6 +91,8 @@ func main() {
 			}
 		}
 	}()
+
+	go betterstack.Heartbeat(context.Background(), cfg.HeartbeatURL, time.Minute, log)
 
 	httpMux := http.NewServeMux()
 	enrich.NewHandler(repo, scanner, inspector, log).Register(httpMux)

@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"fernweh/internal/platform/betterstack"
 	"fernweh/internal/platform/config"
 	"fernweh/internal/platform/httpx"
 	"fernweh/internal/platform/logging"
@@ -40,6 +41,8 @@ func main() {
 	mux := http.NewServeMux()
 	ranking.NewHandler(store, log).Register(mux)
 	httpx.Health(mux, func(ctx context.Context) error { return rdb.Ping(ctx).Err() })
+
+	go betterstack.Heartbeat(context.Background(), cfg.HeartbeatURL, time.Minute, log)
 
 	srv := httpx.NewServer(config.Addr("RANKING_ADDR", ":8082"), service, mux)
 	if err := httpx.Serve(srv, log); err != nil {
