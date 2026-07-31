@@ -1,4 +1,4 @@
-﻿// Package otelx wires OpenTelemetry tracing: OTLP/HTTP export (Jaeger
+// Package otelx wires OpenTelemetry tracing: OTLP/HTTP export (Jaeger
 // all-in-one accepts it natively) plus W3C context propagation, so one trace
 // spans gateway → search → ranking/LLM/Postgres, and, via the task payload,
 // across the Asynq queue into enrichment workers.

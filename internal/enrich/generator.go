@@ -1,4 +1,4 @@
-﻿// Package enrich fills content gaps in inventory: an Asynq-queued pipeline
+// Package enrich fills content gaps in inventory: an Asynq-queued pipeline
 // that scans for thin listings, generates descriptions and amenities from
 // facts already on the listing (never invented claims), and records every
 // change in an audit trail.
@@ -56,7 +56,7 @@ func (g *AIGenerator) Generate(ctx context.Context, l inventory.Listing) (Genera
 		"country": l.Country, "rating": l.Rating, "review_count": l.ReviewCount,
 		"price_per_night_eur": l.PricePerNightCents / 100,
 		"amenities":           l.Amenities, "vibe_tags": l.VibeTags,
-		"best_months":         l.MonthsBest,
+		"best_months": l.MonthsBest,
 	})
 
 	raw, err := g.llm.CompleteJSON(ctx, genSystemPrompt, string(facts))

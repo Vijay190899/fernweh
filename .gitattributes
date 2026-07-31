@@ -1,0 +1,21 @@
+# Normalise line endings in the repository to LF.
+#
+# Without this, a Windows checkout rewrites Go sources to CRLF, gofmt then
+# considers every file unformatted, and the formatting hook fights the
+# checkout on every edit. Containers and CI are Linux; the source of truth
+# should match them.
+* text=auto eol=lf
+
+*.go     text eol=lf
+*.sql    text eol=lf
+*.md     text eol=lf
+*.yml    text eol=lf
+*.yaml   text eol=lf
+*.json   text eol=lf
+*.js     text eol=lf
+*.css    text eol=lf
+*.html   text eol=lf
+Makefile text eol=lf
+
+*.woff2  binary
+*.png    binary

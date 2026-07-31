@@ -1,4 +1,4 @@
-﻿package enrich
+package enrich
 
 import (
 	"context"

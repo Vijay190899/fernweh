@@ -57,9 +57,19 @@ PostgreSQL · Redis            internal network only, never published
 ### Host
 
 Any host with 2 vCPU and 2 GB of RAM upward. The reference target is an
-**Oracle Cloud Always Free ARM instance** (VM.Standard.A1.Flex, up to 4 OCPU
-and 24 GB, free indefinitely), which leaves generous headroom over Coolify's
-requirement. A small VPS such as Hetzner CX22 works identically.
+**Oracle Cloud Always Free ARM instance** (VM.Standard.A1.Flex), free
+indefinitely. Oracle reduced the free ARM allocation to 2 OCPU and 12 GB in
+June 2026, which still leaves comfortable headroom: the platform needs about
+1 GB and the full stack about 2 GB more.
+
+Two things to know before choosing this host. Free ARM capacity is genuinely
+scarce, and instance creation often returns *"Out of host capacity"*; it is
+usually a matter of retrying in a different availability domain over a day or
+so. Upgrading the account to pay-as-you-go improves scheduling priority and
+does not by itself incur charges while resources stay inside the free
+allowances. If that is more friction than it is worth, a small VPS such as
+Hetzner CX22 runs this identically for a few euro a month, and nothing in
+this document changes.
 
 ### Steps
 

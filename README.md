@@ -187,6 +187,20 @@ Testing philosophy and the bugs the suite caught (a substring match that sent
 "romantic" queries to Rome, a thousands separator that parsed €1,000 as €0):
 [docs/BUILDLOG-claude-code.md](docs/BUILDLOG-claude-code.md).
 
+## Why things are the way they are
+
+`docs/brain/` is an [Obsidian](https://obsidian.md) vault kept beside the
+code. Every significant decision has a note recording the context, the
+mechanism, **what was rejected and why**, and what it costs. Open that folder
+as a vault for the graph view, or start at
+[docs/brain/Home.md](docs/brain/Home.md).
+
+The repository also configures Claude Code rather than only prompting it:
+`CLAUDE.md` holds the architectural invariants, `.claude/commands/` holds
+project slash commands, `.claude/settings.json` registers hooks that format
+Go after every edit and refuse to end a session on a broken build, and
+`.claude/agents/` defines a read-only reviewer with a narrow brief.
+
 ## Repo map
 
 ```
@@ -205,6 +219,8 @@ web/            demo UI: vanilla JS, hand-written WebGL globe, self-hosted
 tools/loadgen/  load generator behind the numbers above
 deploy/         production compose overlay (limits, restart policies)
 docs/           PRD · architecture · deployment · build log · chart assets
+  brain/        Obsidian vault: the decisions, and what was rejected
+.claude/        project commands, formatting/build hooks, reviewer subagent
 ```
 
 ## Deploying

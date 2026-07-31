@@ -1,4 +1,4 @@
-﻿package ranking
+package ranking
 
 import (
 	"log/slog"

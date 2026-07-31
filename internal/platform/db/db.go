@@ -1,4 +1,4 @@
-﻿// Package db provides the pgx connection pool and a minimal, forward-only
+// Package db provides the pgx connection pool and a minimal, forward-only
 // migration runner over SQL files embedded in the binary, no external
 // migration tool to install or version-drift.
 package db

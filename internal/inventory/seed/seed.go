@@ -1,4 +1,4 @@
-﻿// Package seed generates a deterministic European travel inventory. A fixed
+// Package seed generates a deterministic European travel inventory. A fixed
 // PRNG seed makes every environment identical and re-runs idempotent (stable
 // listing IDs, ON CONFLICT DO NOTHING).
 package seed

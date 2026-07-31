@@ -1,4 +1,4 @@
-﻿// Command loadgen drives realistic mixed traffic at the gateway and reports
+// Command loadgen drives realistic mixed traffic at the gateway and reports
 // latency percentiles, the "performs well under load" claim, measured.
 //
 //	go run ./tools/loadgen -target http://localhost:8080 -rps 50 -duration 30s

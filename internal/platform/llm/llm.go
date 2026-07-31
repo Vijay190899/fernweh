@@ -1,4 +1,4 @@
-﻿// Package llm is the platform's single door to language models. Callers ask
+// Package llm is the platform's single door to language models. Callers ask
 // for a JSON completion; this package decides whether that is answered by
 // OpenRouter or refused (budget exhausted, no key, provider down), in which
 // case callers must use their deterministic fallback. The AI layer being
