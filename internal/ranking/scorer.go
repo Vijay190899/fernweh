@@ -1,4 +1,4 @@
-package ranking
+﻿package ranking
 
 import (
 	"fmt"
@@ -100,7 +100,7 @@ func Rank(items []Item, p Profile) []Ranked {
 	return out
 }
 
-// overlapWeight sums the profile weight of every attribute the item has —
+// overlapWeight sums the profile weight of every attribute the item has -
 // "how much of what this visitor cares about does this item cover".
 func overlapWeight(attrs []string, weights map[string]float64) float64 {
 	var sum float64

@@ -1,4 +1,4 @@
-package ranking
+﻿package ranking
 
 import (
 	"log/slog"
@@ -70,7 +70,7 @@ func (h *Handler) signals(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
-// profile powers the demo UI's "what the engine knows about you" panel —
+// profile powers the demo UI's "what the engine knows about you" panel -
 // the same transparency a real platform owes its users.
 func (h *Handler) profile(w http.ResponseWriter, r *http.Request) {
 	p, err := h.store.Load(r.Context(), r.PathValue("session"))

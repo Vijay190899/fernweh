@@ -1,4 +1,4 @@
-package enrich
+﻿package enrich
 
 import (
 	"context"
@@ -72,7 +72,7 @@ func (s *Scanner) Scan(ctx context.Context, limit int) (int, error) {
 		)
 		switch {
 		case errors.Is(err, asynq.ErrTaskIDConflict):
-			continue // already queued — dedup working as intended
+			continue // already queued, dedup working as intended
 		case err != nil:
 			return enqueued, fmt.Errorf("enqueue %s: %w", l.ID, err)
 		default:
@@ -146,7 +146,7 @@ func (p *Processor) release(ctx context.Context, id string) {
 }
 
 // MarkFailed parks a listing after retries are exhausted so the dashboard
-// shows it needs human eyes — failure must be visible, not silent.
+// shows it needs human eyes, failure must be visible, not silent.
 func (p *Processor) MarkFailed(ctx context.Context, id string) {
 	for _, from := range []string{inventory.StatusEnriching, inventory.StatusNeedsEnrichment} {
 		if ok, _ := p.store.SetStatus(ctx, id, from, inventory.StatusFailed); ok {

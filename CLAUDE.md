@@ -1,4 +1,4 @@
-# CLAUDE.md — working agreements for AI-assisted development in this repo
+﻿# CLAUDE.md, working agreements for AI-assisted development in this repo
 
 This repo is built AI-first with Claude Code. These are the standing
 instructions that keep generated code consistent with the architecture.
@@ -10,7 +10,7 @@ instructions that keep generated code consistent with the architecture.
   logic in `internal/{search,ranking,enrich,inventory}`.
 - **No web framework.** stdlib `net/http` with Go 1.22+ method patterns
   (`mux.HandleFunc("POST /v1/search", ...)`). Server plumbing goes through
-  `internal/platform/httpx` — do not hand-roll servers or JSON helpers.
+  `internal/platform/httpx`; do not hand-roll servers or JSON helpers.
 - Dependencies are deliberate: pgx, go-redis, asynq, otel, x/time. Propose
   before adding anything else.
 
@@ -36,7 +36,7 @@ instructions that keep generated code consistent with the architecture.
 ## Testing bar (there is no QA team)
 
 - Decision logic (parsers, ladders, scorers, guards) gets table-driven unit
-  tests in the same PR — not after.
+  tests in the same PR, not after.
 - HTTP handlers get `httptest` coverage with consumer-side fakes; interfaces
   are defined at the consumer for exactly this reason.
 - `go build ./... && go vet ./... && go test ./...` must pass before any

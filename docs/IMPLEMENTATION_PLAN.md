@@ -1,4 +1,4 @@
-# Fernweh — Implementation Plan
+﻿# Fernweh, Implementation Plan
 
 ## Monorepo layout (single Go module, no framework)
 
@@ -42,23 +42,23 @@ Everything else is stdlib (`net/http` with Go 1.22+ method routing, `slog`,
 
 ## Build order
 
-1. **Scaffold** — go.mod, Makefile, compose (Postgres/Redis/Jaeger), migrations
+1. **Scaffold**, go.mod, Makefile, compose (Postgres/Redis/Jaeger), migrations
    (listings, promotions, enrichment_audit), seed generator (~300 deterministic
    European listings, ~40% with deliberate content gaps).
-2. **Platform packages** — config, logging, otelx, httpx, redisx, db, llm
+2. **Platform packages**, config, logging, otelx, httpx, redisx, db, llm
    (OpenRouter chat-completions client + Redis daily budget counter + cache).
-3. **Search service** — fallback parser first (it defines the intent contract
+3. **Search service**, fallback parser first (it defines the intent contract
    and is fully unit-testable), then LLM extractor conforming to the same
    interface, query builder + relaxation ladder, HTTP handler, ranking client
    with timeout/degradation.
-4. **Ranking service** — signal ingestion, profile aggregation, scorer with
+4. **Ranking service**, signal ingestion, profile aggregation, scorer with
    explicit weights + business-rule boosts, rank handler with reasons.
-5. **Enrich service** — gap scanner, Asynq task enqueue/handler with trace
+5. **Enrich service**, gap scanner, Asynq task enqueue/handler with trace
    propagation, LLM + template generators, audit writes, stats API.
-6. **Gateway** — static file serving, reverse proxy with request-ID and
+6. **Gateway**, static file serving, reverse proxy with request-ID and
    rate limiting, security headers.
-7. **Frontend** — three-view SPA against the gateway API.
-8. **Quality pass** — unit tests alongside each package (written with the
+7. **Frontend**, three-view SPA against the gateway API.
+8. **Quality pass**, unit tests alongside each package (written with the
    code, not after), loadgen, full-stack compose verification, README.
 
 ## Key technical decisions (ADR summaries)
@@ -79,7 +79,7 @@ Everything else is stdlib (`net/http` with Go 1.22+ method routing, `slog`,
 - **Migrations via embedded SQL + tiny runner** (no external tool): fewer
   moving parts, versioned in-repo, runs at seed time.
 - **Frontend with no build step.** One less toolchain; the artifact is the
-  backend — but the demo must still look excellent.
+  backend, but the demo must still look excellent.
 
 ## Testing strategy
 

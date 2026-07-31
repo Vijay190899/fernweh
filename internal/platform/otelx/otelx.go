@@ -1,6 +1,6 @@
-// Package otelx wires OpenTelemetry tracing: OTLP/HTTP export (Jaeger
+﻿// Package otelx wires OpenTelemetry tracing: OTLP/HTTP export (Jaeger
 // all-in-one accepts it natively) plus W3C context propagation, so one trace
-// spans gateway → search → ranking/LLM/Postgres — and, via the task payload,
+// spans gateway → search → ranking/LLM/Postgres, and, via the task payload,
 // across the Asynq queue into enrichment workers.
 package otelx
 
@@ -68,7 +68,7 @@ func Inject(ctx context.Context, req *http.Request) {
 	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
 }
 
-// MapCarrier round-trips trace context through a plain map — used to carry
+// MapCarrier round-trips trace context through a plain map, used to carry
 // context inside Asynq task payloads across the queue boundary.
 func InjectMap(ctx context.Context) map[string]string {
 	m := propagation.MapCarrier{}

@@ -1,5 +1,5 @@
-// Command loadgen drives realistic mixed traffic at the gateway and reports
-// latency percentiles — the "performs well under load" claim, measured.
+﻿// Command loadgen drives realistic mixed traffic at the gateway and reports
+// latency percentiles, the "performs well under load" claim, measured.
 //
 //	go run ./tools/loadgen -target http://localhost:8080 -rps 50 -duration 30s
 package main
@@ -83,7 +83,7 @@ func main() {
 	wg.Wait()
 
 	if len(latencies) == 0 {
-		fmt.Println("no successful requests — is the stack up?")
+		fmt.Println("no successful requests, is the stack up?")
 		os.Exit(1)
 	}
 	sort.Slice(latencies, func(i, j int) bool { return latencies[i] < latencies[j] })

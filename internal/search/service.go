@@ -1,4 +1,4 @@
-package search
+﻿package search
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 )
 
 // Inventory is the slice of the repo this service needs (interface at the
-// consumer, per Go convention — also what unit tests fake).
+// consumer, per Go convention, also what unit tests fake).
 type Inventory interface {
 	Search(ctx context.Context, f inventory.Filter) ([]inventory.Listing, error)
 	ActivePromotions(ctx context.Context) (map[string]inventory.Promotion, error)
@@ -105,7 +105,7 @@ func (s *Service) Search(ctx context.Context, query, sessionID string) (Response
 	}
 	resp.Relaxations = relaxations
 
-	// 3. Personalize — degrade to base order if ranking is unavailable.
+	// 3. Personalize, degrade to base order if ranking is unavailable.
 	resp.Results = s.rank(ctx, sessionID, listings)
 	if len(resp.Results) == 0 {
 		for _, l := range listings {

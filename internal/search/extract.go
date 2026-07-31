@@ -1,4 +1,4 @@
-package search
+﻿package search
 
 import (
 	"context"
@@ -66,7 +66,7 @@ func (e *Extractor) Extract(ctx context.Context, query string) (Intent, string) 
 		if json.Unmarshal(raw, &in) == nil {
 			in = in.Normalize()
 			// A model reply that extracted nothing from a non-trivial query is
-			// suspect — cross-check with rules rather than trusting silence.
+			// suspect, cross-check with rules rather than trusting silence.
 			if in.IsEmpty() {
 				in = e.fallback.Parse(query)
 			}

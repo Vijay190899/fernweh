@@ -1,4 +1,4 @@
-// Package inventory is the shared read/write model for travel listings —
+﻿// Package inventory is the shared read/write model for travel listings -
 // the one domain package every service speaks.
 package inventory
 

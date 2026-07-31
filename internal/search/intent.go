@@ -1,6 +1,6 @@
-// Package search turns a natural-language travel wish into ranked inventory.
-// Intent extraction has two implementations behind one contract — an LLM and
-// a deterministic parser — so search works identically (if less cleverly)
+﻿// Package search turns a natural-language travel wish into ranked inventory.
+// Intent extraction has two implementations behind one contract, an LLM and
+// a deterministic parser, so search works identically (if less cleverly)
 // when no AI is available.
 package search
 

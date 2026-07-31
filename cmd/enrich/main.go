@@ -1,5 +1,5 @@
-// Command enrich runs the content pipeline: an Asynq worker that fills
-// listing gaps, a periodic scanner, and the ops/admin API — one binary,
+﻿// Command enrich runs the content pipeline: an Asynq worker that fills
+// listing gaps, a periodic scanner, and the ops/admin API, one binary,
 // three concurrent duties, all sharing one trace pipeline.
 package main
 
@@ -63,7 +63,7 @@ func main() {
 	processor := enrich.NewProcessor(repo, generator, log)
 	scanner := enrich.NewScanner(repo, client, log)
 
-	// Asynq worker: bounded concurrency — enrichment is background work and
+	// Asynq worker: bounded concurrency, enrichment is background work and
 	// must never starve the interactive services of DB connections.
 	srv := asynq.NewServer(redisOpt, asynq.Config{
 		Concurrency: 2,

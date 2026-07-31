@@ -1,4 +1,4 @@
-package enrich
+﻿package enrich
 
 import (
 	"context"
@@ -34,7 +34,7 @@ func TestTemplateGeneratorUsesOnlyListingFacts(t *testing.T) {
 		}
 	}
 	// The guarantee that matters: no invented claims. Everything in the copy
-	// must trace to a listing field — spot-check words that would signal
+	// must trace to a listing field, spot-check words that would signal
 	// invention for this listing.
 	for _, banned := range []string{"spa", "ski", "sauna", "sea view"} {
 		if strings.Contains(strings.ToLower(gen.Description), banned) {

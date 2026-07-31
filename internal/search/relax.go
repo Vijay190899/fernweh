@@ -1,4 +1,4 @@
-package search
+﻿package search
 
 import "fmt"
 
@@ -13,7 +13,7 @@ type RelaxStep struct {
 // ladder drops the constraints travelers consider most negotiable first
 // (vibes, amenities) and identity constraints last (destination, category);
 // the final rung is unconstrained, so a non-empty inventory guarantees
-// results. Every applied note is surfaced to the user — silent relaxation
+// results. Every applied note is surfaced to the user, silent relaxation
 // would be a dark pattern.
 func RelaxationLadder(in Intent) []RelaxStep {
 	steps := []RelaxStep{{Intent: in, Note: ""}}

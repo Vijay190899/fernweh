@@ -1,4 +1,4 @@
-// Package seed generates a deterministic European travel inventory. A fixed
+﻿// Package seed generates a deterministic European travel inventory. A fixed
 // PRNG seed makes every environment identical and re-runs idempotent (stable
 // listing IDs, ON CONFLICT DO NOTHING).
 package seed
@@ -152,7 +152,7 @@ func Generate(n int, gapRatio float64) ([]inventory.Listing, []inventory.Promoti
 		listings = append(listings, l)
 	}
 
-	// Promotions on ~5% of listings — the merchandising layer ranking must honor.
+	// Promotions on ~5% of listings, the merchandising layer ranking must honor.
 	labels := []string{"Summer Deal", "Partner Highlight", "Early Bird", "Last Minute"}
 	var promos []inventory.Promotion
 	for i, l := range listings {
