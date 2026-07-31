@@ -47,7 +47,7 @@ func Load(service string) Config {
 		OpenRouterKey:  os.Getenv("OPENROUTER_API_KEY"),
 		LLMModel:       getStr("LLM_MODEL", "anthropic/claude-haiku-4.5"),
 		LLMTimeout:     time.Duration(getInt("LLM_TIMEOUT_MS", 2500)) * time.Millisecond,
-		LLMDailyBudget: getInt("LLM_DAILY_CALL_BUDGET", 2000),
+		LLMDailyBudget: getInt("LLM_DAILY_CALL_BUDGET", 500),
 		SearchURL:      getStr("SEARCH_URL", "http://localhost:8081"),
 		RankingURL:     getStr("RANKING_URL", "http://localhost:8082"),
 		EnrichURL:      getStr("ENRICH_URL", "http://localhost:8083"),
