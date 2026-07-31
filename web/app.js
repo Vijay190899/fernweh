@@ -29,16 +29,69 @@ const signal = (payload) =>
     body: JSON.stringify({ session_id: session, ...payload }),
   }).catch(() => {});
 
-/* ---------- tabs ---------- */
-$$(".tab").forEach((t) =>
-  t.addEventListener("click", () => {
-    $$(".tab").forEach((x) => x.classList.toggle("active", x === t));
-    ["search", "ops", "how"].forEach((v) =>
-      $("#view-" + v).classList.toggle("hidden", t.dataset.view !== v)
-    );
-    if (t.dataset.view === "ops") startOps(); else stopOps();
-  })
-);
+/* ---------- loader ----------
+ * The percentage tracks real readiness: fonts decoded and the platform
+ * answering its health check.
+ *
+ * Progress is driven by elapsed time rather than by frame count, and the
+ * dismissal is guaranteed by a timer that does not depend on animation
+ * frames at all. A loading curtain that can outlive its own animation loop
+ * is worse than no curtain, because it hides a working page. */
+(function loader() {
+  const el = document.getElementById("loader");
+  const pct = document.getElementById("loader-pct");
+  if (!el || !pct) return;
+
+  const RATE = 55;        // percent per second while waiting
+  let shown = 0, target = 8, settled = false, last = performance.now();
+  const bump = (v) => { target = Math.max(target, v); };
+
+  (document.fonts ? document.fonts.ready : Promise.resolve())
+    .then(() => bump(60)).catch(() => bump(60));
+  fetch("/healthz").then(() => bump(90)).catch(() => bump(90));
+  window.addEventListener("load", () => bump(100));
+
+  function dismiss() {
+    if (settled) return;
+    settled = true;
+    pct.textContent = "100";
+    el.classList.add("done");
+    setTimeout(() => el.remove(), 800);
+  }
+
+  // Hard ceiling: the page is revealed after this regardless of what any
+  // dependency is doing.
+  setTimeout(dismiss, 3500);
+
+  (function tick(now) {
+    const dt = Math.min(0.1, (now - last) / 1000);
+    last = now;
+    shown = Math.min(target, shown + RATE * dt);
+    pct.textContent = Math.round(shown);
+    if (shown >= 99.5) { dismiss(); return; }
+    if (!settled) requestAnimationFrame(tick);
+  })(last);
+})();
+
+/* ---------- section highlighting ---------- */
+(function navHighlight() {
+  const links = $$(".tab");
+  if (!links.length || !("IntersectionObserver" in window)) return;
+  const byId = new Map(links.map((a) => [a.getAttribute("href").slice(1), a]));
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach((e) => {
+      const link = byId.get(e.target.id);
+      if (link && e.isIntersecting) {
+        links.forEach((l) => l.style.removeProperty("color"));
+        link.style.color = "var(--ink)";
+      }
+    });
+  }, { rootMargin: "-45% 0px -45% 0px" });
+  byId.forEach((_, id) => {
+    const sec = document.getElementById(id);
+    if (sec) obs.observe(sec);
+  });
+})();
 
 /* ---------- config (Jaeger link) ---------- */
 let jaegerURL = "http://localhost:16686";
@@ -113,7 +166,13 @@ function intentPills(intent) {
 }
 
 function renderMeta(data, traceId) {
-  const src = { llm: ["ai", "🤖 AI parsed"], fallback: ["rules", "⚙️ rules parsed"], cache: ["cache", "⚡ cached"] }[data.intent_source] || ["rules", data.intent_source];
+  // Typographic labels rather than emoji: these are status indicators, and
+  // emoji render differently on every platform.
+  const src = {
+    llm: ["ai", "Model parsed"],
+    fallback: ["rules", "Rules parsed"],
+    cache: ["cache", "Cached intent"],
+  }[data.intent_source] || ["rules", data.intent_source];
   const degraded = (data.degraded || []).length
     ? `<span class="pill" title="${data.degraded.join(", ")}">degraded gracefully</span>` : "";
   const trace = traceId
@@ -128,8 +187,54 @@ function renderMeta(data, traceId) {
 function renderRelaxations(relaxations) {
   const el = $("#relaxations");
   if (!relaxations || !relaxations.length) return;
-  el.innerHTML = `🪜 <strong>No exact matches, so we adjusted:</strong> ${relaxations.join(" · ")}`;
+  el.innerHTML = `<strong>No exact match, so these constraints were relaxed:</strong> ${relaxations.join(" · ")}`;
   el.classList.remove("hidden");
+}
+
+/* Listing artwork is generated rather than fetched.
+ *
+ * The seeded inventory has no real photography, and wiring a stock-photo
+ * service returns things like a tiger for a beach villa, which reads as
+ * broken. Deriving a deterministic abstract landscape from the listing id
+ * keeps the art direction consistent, keeps the page inside its
+ * same-origin CSP with no external image host, and costs no requests.
+ * A production system would swap this for supplier media. */
+const SCENERY = {
+  beach:       ["#f6d9b0", "#7fc7c4", "#2e6f7e", 62],
+  city:        ["#e8d9d2", "#8f7f92", "#3b3550", 20],
+  ski:         ["#eef3f7", "#a9c2d6", "#4d6785", 74],
+  wellness:    ["#e9efe0", "#a9c39c", "#4a6b55", 55],
+  countryside: ["#f4e6c0", "#c2b177", "#6b6a3c", 58],
+  adventure:   ["#dbe8e4", "#79a598", "#2f4f4a", 68],
+};
+
+function thumb(l) {
+  const [sky, mid, land, horizon] = SCENERY[l.category] || SCENERY.countryside;
+  // Stable per-listing variation from the id.
+  let h = 0;
+  for (let i = 0; i < l.id.length; i++) h = (h * 31 + l.id.charCodeAt(i)) >>> 0;
+  const sunX = 18 + (h % 64);
+  const sunY = horizon - 34 + (h >> 6) % 18;
+  const ridge = (h >> 3) % 3;
+
+  const ridges = [
+    `M0 ${horizon} L26 ${horizon - 16} L48 ${horizon - 4} L72 ${horizon - 20} L100 ${horizon - 7} L100 100 L0 100 Z`,
+    `M0 ${horizon + 3} Q25 ${horizon - 14} 50 ${horizon + 1} T100 ${horizon - 6} L100 100 L0 100 Z`,
+    `M0 ${horizon} L20 ${horizon - 22} L38 ${horizon - 6} L60 ${horizon - 26} L80 ${horizon - 8} L100 ${horizon - 18} L100 100 L0 100 Z`,
+  ][ridge];
+
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none">` +
+    `<defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1">` +
+    `<stop offset="0" stop-color="${sky}"/><stop offset="1" stop-color="${mid}"/>` +
+    `</linearGradient></defs>` +
+    `<rect width="100" height="100" fill="url(#s)"/>` +
+    `<circle cx="${sunX}" cy="${sunY}" r="7" fill="${sky}" opacity=".85"/>` +
+    `<path d="${ridges}" fill="${land}" opacity=".92"/>` +
+    `</svg>`;
+
+  return `<div class="thumb" role="img" aria-label="Illustration of a ${l.category} destination"
+    style="background-image:url('data:image/svg+xml;utf8,${encodeURIComponent(svg)}')"></div>`;
 }
 
 function renderResults(results) {
@@ -140,16 +245,16 @@ function renderResults(results) {
     card.className = "card";
     card.innerHTML = `
       ${promo ? `<span class="ribbon">${promo}</span>` : ""}
-      <img src="${l.image_url}" alt="" loading="lazy">
+      ${thumb(l)}
       <div class="body">
         <h3>${l.name}</h3>
         <div class="where">${l.destination} · ${l.country}</div>
         <div class="rowline">
-          <span class="stars">★ ${l.rating.toFixed(1)} <span style="color:var(--ink-soft);font-weight:400">(${l.review_count})</span></span>
+          <span class="stars">${l.rating.toFixed(1)} <small>(${l.review_count})</small></span>
           <span class="price">€${Math.round(l.price_per_night_cents / 100)}<span> /night</span></span>
         </div>
         <div class="tagrow">${(l.amenities || []).slice(0, 4).map((a) => `<span class="tag">${a}</span>`).join("")}</div>
-        ${reasons && reasons.length ? `<div class="whyrow">${reasons.map((r) => `<span class="why">✨ ${r}</span>`).join("")}</div>` : ""}
+        ${reasons && reasons.length ? `<div class="whyrow">${reasons.map((r) => `<span class="why">${r}</span>`).join("")}</div>` : ""}
         <div class="actions"><button class="book">Book this trip</button></div>
       </div>`;
 
@@ -193,10 +298,26 @@ $("#reset-session").addEventListener("click", () => {
   $("#profile-body").innerHTML = '<p class="fine dim">Fresh session. The engine forgot you.</p>';
 });
 
-/* ================= OPS ================= */
+/* ================= OPS =================
+ * The dashboard now lives inline on the page rather than behind a tab, so
+ * polling starts when it scrolls into view and stops when it leaves. There is
+ * no reason to hold a 3-second timer open against a section nobody is
+ * looking at. */
 let opsTimer = null;
-function startOps() { pollOps(); opsTimer = setInterval(pollOps, 3000); }
+function startOps() { if (opsTimer) return; pollOps(); opsTimer = setInterval(pollOps, 3000); }
 function stopOps() { clearInterval(opsTimer); opsTimer = null; }
+
+(function opsVisibility() {
+  const tiles = $("#stat-tiles");
+  if (!tiles) return;
+  if (!("IntersectionObserver" in window)) { startOps(); return; }
+  new IntersectionObserver((entries) => {
+    entries.forEach((e) => (e.isIntersecting ? startOps() : stopOps()));
+  }, { rootMargin: "200px 0px" }).observe(tiles);
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) stopOps();
+  });
+})();
 
 async function pollOps() {
   try {

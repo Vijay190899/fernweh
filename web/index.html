@@ -3,141 +3,244 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fernweh · AI travel search demo</title>
-<meta name="description" content="Natural-language travel search with zero dead ends, personalized ranking, and self-healing content. A Go microservices demo.">
+<title>Fernweh · AI travel search</title>
+<meta name="description" content="Natural-language travel search with no dead ends, personalized ranking, and content that repairs itself. A Go services demo.">
+<link rel="preload" href="/fonts/PlusJakartaSans-var.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/InstrumentSerif.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/style.css">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧭</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='13' fill='none' stroke='%23c9647f' stroke-width='2'/><path d='M21 11 14 14 11 21 18 18Z' fill='%23c9647f'/></svg>">
 </head>
 <body>
 
+<!-- Loader: waits on fonts and on the platform reporting ready, so the
+     percentage reflects real readiness rather than a fixed timer. -->
+<div id="loader" aria-hidden="true">
+  <div class="loader-inner">
+    <span class="loader-mark"></span>
+    <span id="loader-pct" class="loader-pct">0</span>
+  </div>
+</div>
+
+<canvas id="scene" aria-hidden="true"></canvas>
+
 <header class="top">
-  <div class="wrap top-inner">
-    <div class="brand">
-      <span class="brand-mark">🧭</span>
+  <div class="shell top-inner">
+    <a class="brand" href="#top">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <circle cx="16" cy="16" r="13" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <path d="M21 11 14 14 11 21 18 18Z" fill="currentColor"/>
+      </svg>
       <span class="brand-name">Fernweh</span>
-      <span class="brand-tag">n. the ache for far-off places</span>
-    </div>
-    <nav class="tabs" role="tablist">
-      <button class="tab active" data-view="search">Search</button>
-      <button class="tab" data-view="ops">Content Ops</button>
-      <button class="tab" data-view="how">Under the hood</button>
+    </a>
+    <nav class="tabs" aria-label="Sections">
+      <a class="tab" href="#beat-search">Search</a>
+      <a class="tab" href="#beat-rank">Ranking</a>
+      <a class="tab" href="#beat-enrich">Content</a>
+      <a class="tab" href="#beat-build">Build</a>
     </nav>
-    <a class="gh" href="https://github.com/Vijay190899/fernweh" target="_blank" rel="noopener">GitHub ↗</a>
+    <a class="ghost-link" href="https://github.com/Vijay190899/fernweh" target="_blank" rel="noopener">
+      Source
+      <svg viewBox="0 0 16 16" aria-hidden="true" class="ico"><path d="M4.5 11.5 11.5 4.5M6 4.5h5.5V10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
   </div>
 </header>
 
-<!-- ============ SEARCH VIEW ============ -->
-<main id="view-search" class="view wrap">
-  <section class="hero">
-    <canvas id="globe" aria-hidden="true"></canvas>
-    <h1>Search the way <em>you</em> talk.</h1>
-    <p class="sub">One sentence in, bookable trips out. No filter walls, no empty result pages. English or German.</p>
+<main id="top">
+
+<!-- ========== BEAT 0 ========== -->
+<section class="beat hero" data-scene="globe">
+  <div class="shell hero-inner">
+    <p class="eyebrow">Fernweh <span class="sep">·</span> <em>n.</em> the ache for far-off places</p>
+    <h1 class="display">
+      Say where you want to go.<br>
+      <em>Not how to filter for it.</em>
+    </h1>
+    <p class="lede">
+      A working slice of an AI travel platform. One sentence in, bookable
+      trips out, and never an empty page. English or German.
+    </p>
+
     <form id="search-form" class="searchbar" autocomplete="off">
-      <input id="q" type="text" maxlength="500" placeholder="A beach weekend under €1,000 in March…" aria-label="Describe your trip">
-      <button type="submit" id="go">Search</button>
+      <label class="sr-only" for="q">Describe your trip</label>
+      <input id="q" name="q" type="text" maxlength="500"
+             placeholder="A beach weekend under €1,000 in March">
+      <button type="submit" id="go">
+        <span>Search</span>
+        <svg viewBox="0 0 16 16" aria-hidden="true" class="ico"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
     </form>
+
     <div class="chips" id="examples">
       <button type="button" class="chip">A beach weekend under €1,000 in March</button>
       <button type="button" class="chip">Family hotel in Crete with kids club, 4 stars</button>
       <button type="button" class="chip">Städtetrip nach Wien im Oktober, ruhig und günstig</button>
-      <button type="button" class="chip">Romantic vineyard escape in Portugal</button>
-      <button type="button" class="chip">Ski chalet with sauna, max €400 per night</button>
+      <button type="button" class="chip">Somewhere warm and quiet in late spring, good food</button>
     </div>
-  </section>
+  </div>
 
-  <section id="results-zone" class="hidden">
+  <div class="scroll-cue" aria-hidden="true">
+    <span>Scroll</span>
+    <svg viewBox="0 0 12 28"><path d="M6 2v22M2.5 20.5 6 24l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+</section>
+
+<!-- ========== RESULTS (revealed after a search) ========== -->
+<section id="results-zone" class="beat panel hidden">
+  <div class="shell">
     <div id="meta" class="meta"></div>
     <div id="relaxations" class="notice hidden"></div>
     <div class="results-layout">
-      <div id="results" class="grid"></div>
-      <aside class="profile-panel" id="profile-panel">
-        <h3>What the engine knows about you</h3>
-        <p class="fine">Session only. No account, nothing stored past 7 days. Click and book results to teach it.</p>
+      <div id="results" class="grid-cards"></div>
+      <aside class="profile-panel">
+        <h3>What the engine knows</h3>
+        <p class="fine">Session only. No account, nothing kept past seven days.
+          Open and book results to teach it.</p>
         <div id="profile-body"><p class="fine dim">No signals yet. This session ranks cold.</p></div>
-        <button id="reset-session" class="ghost">Forget me (new session)</button>
+        <button id="reset-session" class="ghost">Forget this session</button>
       </aside>
     </div>
-  </section>
-</main>
+  </div>
+</section>
 
-<!-- ============ OPS VIEW ============ -->
-<main id="view-ops" class="view wrap hidden">
-  <section class="ops-head">
-    <div>
-      <h1>Content that fixes itself.</h1>
-      <p class="sub">40% of the seeded inventory arrived with missing or thin content. The pipeline finds the gaps, queues them, and writes copy grounded in listing facts. Every change is audited.</p>
-    </div>
-    <button id="scan-btn">Run scan now</button>
-  </section>
-  <div id="stat-tiles" class="tiles"></div>
-  <section class="ops-tables">
-    <div class="ops-col">
-      <h3>Needs enrichment <span id="gap-count" class="count"></span></h3>
-      <div id="gap-list" class="rows"></div>
-    </div>
-    <div class="ops-col">
-      <h3>Recently enriched <span class="count live-dot" id="enriched-live"></span></h3>
-      <div id="enriched-list" class="rows"></div>
-    </div>
-  </section>
-</main>
-
-<!-- ============ HOW VIEW ============ -->
-<main id="view-how" class="view wrap hidden">
-  <h1>Under the hood</h1>
-  <p class="sub">Four Go services, no web framework, one trace per request. The same operational shape as a production travel platform.</p>
-
-  <div class="arch">
-    <div class="arch-row">
-      <div class="node edge">Gateway<span>:8080 · rate limit · static UI</span></div>
-    </div>
-    <div class="arch-flow">│</div>
-    <div class="arch-row">
-      <div class="node">Search<span>language → intent → SQL · relaxation ladder</span></div>
-      <div class="node">Ranking<span>session signals · bounded business rules</span></div>
-      <div class="node">Enrich<span>Asynq workers · audit trail</span></div>
-    </div>
-    <div class="arch-flow">│</div>
-    <div class="arch-row">
-      <div class="node store">PostgreSQL<span>inventory · promotions · audit</span></div>
-      <div class="node store">Redis<span>profiles · intent cache · queue · LLM budget</span></div>
-      <div class="node store">Jaeger<span>every request, one trace</span></div>
+<!-- ========== BEAT 1 ========== -->
+<section id="beat-search" class="beat story" data-scene="converge">
+  <div class="shell story-inner">
+    <span class="index">01</span>
+    <h2 class="display">Understanding<br><em>beats filtering.</em></h2>
+    <div class="story-body">
+      <p>A traveller writes one sentence. A language model turns it into a
+        strict, validated intent: destination, month, budget per night, party,
+        the amenities that matter. Then it queries live inventory.</p>
+      <p>When the model is unavailable, over budget, or slow, a deterministic
+        parser answers instead and the response says which path served it.
+        Search never fails because an AI provider failed.</p>
+      <dl class="facts">
+        <div><dt>Intent extraction</dt><dd>385 in / 50 out tokens</dd></div>
+        <div><dt>Fallback parse</dt><dd>14.8&thinsp;µs, zero network</dd></div>
+        <div><dt>Empty result pages</dt><dd>None, by construction</dd></div>
+      </dl>
     </div>
   </div>
+</section>
 
-  <div class="how-cards">
-    <div class="how-card">
-      <h3>⚡ The AI is optional at runtime</h3>
-      <p>Intent extraction and content generation go through one LLM door with a daily budget cap. No key, cap reached, provider down? Deterministic fallbacks answer instead. Search never breaks, and the response says which path served it (watch the engine badge).</p>
-    </div>
-    <div class="how-card">
-      <h3>🪜 Zero dead ends, honestly</h3>
-      <p>Over-constrained queries relax stepwise: style, then amenities, then budget by 15/30%, then dates, then place. Every relaxation is disclosed in the yellow banner. No silent result stuffing.</p>
-    </div>
-    <div class="how-card">
-      <h3>🔍 One trace across the queue</h3>
-      <p>Trace context rides inside Asynq task payloads, so scan, Redis, worker, and Postgres show as a single Jaeger trace. Each search response carries its trace id. Click it.</p>
-    </div>
-    <div class="how-card">
-      <h3>🛡️ Safe to run in public</h3>
-      <p>Per-IP token buckets, body-size caps, a platform-wide daily LLM budget in Redis, security headers, and internal services the internet cannot reach. Logs ship to Betterstack when configured.</p>
+<!-- ========== BEAT 2 ========== -->
+<section id="beat-rank" class="beat story alt" data-scene="rank">
+  <div class="shell story-inner">
+    <span class="index">02</span>
+    <h2 class="display">Ordered for you.<br><em>Still honest.</em></h2>
+    <div class="story-body">
+      <p>Every click, dwell and booking becomes a weighted signal. Those build
+        a session profile, and the profile reorders results. Each card carries
+        the reason it ranked where it did.</p>
+      <p>Merchandising rules sit alongside personal fit, bounded so a promoted
+        listing can tip a close call but never bury a clearly better match.
+        Promotions are always disclosed on the card.</p>
+      <dl class="facts">
+        <div><dt>Scoring</dt><dd>0.55 relevance · 0.30 personal · 0.15 business</dd></div>
+        <div><dt>Rank 30 candidates</dt><dd>10.5&thinsp;µs</dd></div>
+        <div><dt>Profile storage</dt><dd>Redis, 7-day TTL, no PII</dd></div>
+      </dl>
     </div>
   </div>
+</section>
 
-  <div class="linkrow">
-    <a id="jaeger-link" href="http://localhost:16686" target="_blank" rel="noopener">Open Jaeger ↗</a>
-    <a href="https://github.com/Vijay190899/fernweh" target="_blank" rel="noopener">Source ↗</a>
-    <a href="https://github.com/Vijay190899/fernweh/blob/main/docs/PRD.md" target="_blank" rel="noopener">PRD ↗</a>
-    <a href="https://github.com/Vijay190899/fernweh/blob/main/docs/BUILDLOG-claude-code.md" target="_blank" rel="noopener">Build log ↗</a>
+<!-- ========== BEAT 3 ========== -->
+<section id="beat-enrich" class="beat story" data-scene="grid">
+  <div class="shell story-inner">
+    <span class="index">03</span>
+    <h2 class="display">Inventory that<br><em>repairs itself.</em></h2>
+    <div class="story-body">
+      <p>Supplier feeds arrive with holes: no description, no amenities,
+        nothing to rank on. A scanner finds them, a queue distributes the work,
+        and a worker writes copy grounded strictly in facts already on the
+        listing. No invented pools, no invented views.</p>
+      <p>Every write is audited with its before, its after, and whether a model
+        or a template produced it.</p>
+    </div>
   </div>
+</section>
+
+<section class="beat panel">
+  <div class="shell">
+    <div class="ops-head">
+      <h3>Content operations, live</h3>
+      <button id="scan-btn">Run a scan</button>
+    </div>
+    <div id="stat-tiles" class="tiles"></div>
+    <div class="ops-tables">
+      <div class="ops-col">
+        <h4>Waiting on enrichment <span id="gap-count" class="count"></span></h4>
+        <div id="gap-list" class="rows"></div>
+      </div>
+      <div class="ops-col">
+        <h4>Recently repaired <span class="count live-dot"></span></h4>
+        <div id="enriched-list" class="rows"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== BEAT 4 ========== -->
+<section id="beat-build" class="beat story alt" data-scene="grid">
+  <div class="shell story-inner">
+    <span class="index">04</span>
+    <h2 class="display">Built to be<br><em>taken apart.</em></h2>
+    <div class="story-body">
+      <p>Four Go services, no web framework, one trace per request that follows
+        a job across a Redis queue into a worker. Postgres, Redis, Asynq,
+        OpenTelemetry, Betterstack. The same Compose file runs locally and in
+        production.</p>
+    </div>
+  </div>
+</section>
+
+<section class="beat panel">
+  <div class="shell">
+    <div class="cards">
+      <article class="card-note">
+        <h4>The AI is optional at runtime</h4>
+        <p>One client owns model access and meters spend against a daily
+          budget. Remove the key and every feature still works, on
+          deterministic paths, and the badge above your results says so.</p>
+      </article>
+      <article class="card-note">
+        <h4>No dead ends, disclosed</h4>
+        <p>Over-constrained queries relax in a fixed order: style, amenities,
+          rating, budget by 15 then 30 percent, dates, place. Whatever was
+          relaxed is shown to the traveller.</p>
+      </article>
+      <article class="card-note">
+        <h4>One trace across the queue</h4>
+        <p>Trace context is serialised into the task payload, so a scan, its
+          Redis hop, the worker and the database write appear as a single
+          trace. Every search response links its own.</p>
+      </article>
+      <article class="card-note">
+        <h4>Measured, not asserted</h4>
+        <p>15,498 requests across five load levels, zero errors, p95 flat at
+          five milliseconds from 25 to 400 requests per second. The generator
+          that produced those numbers is in the repository.</p>
+      </article>
+    </div>
+    <div class="linkrow">
+      <a id="jaeger-link" href="http://localhost:16686" target="_blank" rel="noopener">Open Jaeger</a>
+      <a href="https://github.com/Vijay190899/fernweh/blob/main/docs/ARCHITECTURE.md" target="_blank" rel="noopener">Architecture</a>
+      <a href="https://github.com/Vijay190899/fernweh/blob/main/docs/PRD.md" target="_blank" rel="noopener">Product spec</a>
+      <a href="https://github.com/Vijay190899/fernweh/blob/main/docs/BUILDLOG-claude-code.md" target="_blank" rel="noopener">Build log</a>
+    </div>
+  </div>
+</section>
+
 </main>
 
-<footer class="wrap foot">
-  Built by <strong>Vijay Ananth</strong> with Claude Code ·
-  Go · PostgreSQL · Redis · Asynq · OpenTelemetry · Betterstack · no web framework
+<footer class="foot">
+  <div class="shell foot-inner">
+    <span>Built by <strong>Vijay Ananth</strong> with Claude Code</span>
+    <span class="stackline">Go · PostgreSQL · Redis · Asynq · OpenTelemetry · Betterstack</span>
+  </div>
 </footer>
 
-<script src="/globe.js"></script>
-<script src="/app.js"></script>
+<script src="/scene.js" defer></script>
+<script src="/app.js" defer></script>
 </body>
 </html>
