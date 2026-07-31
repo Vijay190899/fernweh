@@ -1,4 +1,4 @@
-﻿// Command search is the AI search service: natural-language queries in,
+// Command search is the AI search service: natural-language queries in,
 // ranked live inventory out, with or without an LLM available.
 package main
 

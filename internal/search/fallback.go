@@ -1,4 +1,4 @@
-﻿package search
+package search
 
 import (
 	"regexp"
@@ -102,12 +102,12 @@ var amenityRules = []struct {
 
 var (
 	thousandsRe = regexp.MustCompile(`(\d)[,.](\d{3})\b`)
-	budgetRe   = regexp.MustCompile(`(?:€|eur|euro)?\s*(\d{2,5})\s*(?:€|eur|euros?)?`)
-	nightsRe   = regexp.MustCompile(`(\d{1,2})\s*(?:nights?|nächte)`)
-	daysRe     = regexp.MustCompile(`(\d{1,2})\s*(?:days?|tage)`)
-	starsRe    = regexp.MustCompile(`(\d(?:\.\d)?)\s*(?:\+\s*)?stars?`)
-	perNightRe = regexp.MustCompile(`per night|/night|a night|pro nacht`)
-	underRe    = regexp.MustCompile(`(?:under|below|less than|max|up to|unter|bis)\s*(?:€|eur|euro)?\s*(\d{2,5})`)
+	budgetRe    = regexp.MustCompile(`(?:€|eur|euro)?\s*(\d{2,5})\s*(?:€|eur|euros?)?`)
+	nightsRe    = regexp.MustCompile(`(\d{1,2})\s*(?:nights?|nächte)`)
+	daysRe      = regexp.MustCompile(`(\d{1,2})\s*(?:days?|tage)`)
+	starsRe     = regexp.MustCompile(`(\d(?:\.\d)?)\s*(?:\+\s*)?stars?`)
+	perNightRe  = regexp.MustCompile(`per night|/night|a night|pro nacht`)
+	underRe     = regexp.MustCompile(`(?:under|below|less than|max|up to|unter|bis)\s*(?:€|eur|euro)?\s*(\d{2,5})`)
 )
 
 // Parse extracts intent with rules only. Always succeeds; empty intent means

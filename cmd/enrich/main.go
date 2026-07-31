@@ -1,4 +1,4 @@
-﻿// Command enrich runs the content pipeline: an Asynq worker that fills
+// Command enrich runs the content pipeline: an Asynq worker that fills
 // listing gaps, a periodic scanner, and the ops/admin API, one binary,
 // three concurrent duties, all sharing one trace pipeline.
 package main

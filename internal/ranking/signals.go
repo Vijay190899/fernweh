@@ -1,4 +1,4 @@
-﻿// Package ranking personalizes result order from session behavior, no
+// Package ranking personalizes result order from session behavior, no
 // accounts, no PII, just what this visitor did in this session (and a TTL so
 // even that evaporates). Personalization is bounded by business rules and
 // every score comes with human-readable reasons.

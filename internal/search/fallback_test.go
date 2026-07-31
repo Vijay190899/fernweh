@@ -70,11 +70,11 @@ func TestPerNightBudget(t *testing.T) {
 		explicit       bool
 		want           int
 	}{
-		{250, 0, false, 250},   // small amounts read as nightly
-		{1000, 2, false, 500},  // weekend total
-		{1400, 7, false, 200},  // week total
-		{2100, 0, false, 300},  // unknown length defaults to 7 nights
-		{800, 2, true, 800},    // explicit per-night wins regardless
+		{250, 0, false, 250},  // small amounts read as nightly
+		{1000, 2, false, 500}, // weekend total
+		{1400, 7, false, 200}, // week total
+		{2100, 0, false, 300}, // unknown length defaults to 7 nights
+		{800, 2, true, 800},   // explicit per-night wins regardless
 	}
 	for _, tt := range tests {
 		if got := perNightBudget(tt.amount, tt.nights, tt.explicit); got != tt.want {
@@ -86,11 +86,11 @@ func TestPerNightBudget(t *testing.T) {
 
 func TestNormalizeClampsHostileValues(t *testing.T) {
 	in := Intent{
-		Category:  "casino",  // not a real category
-		Month:     13,        // invalid
-		BudgetMax: -5,        // negative
-		MinRating: 9.9,       // above scale
-		Nights:    500,       // absurd
+		Category:  "casino", // not a real category
+		Month:     13,       // invalid
+		BudgetMax: -5,       // negative
+		MinRating: 9.9,      // above scale
+		Nights:    500,      // absurd
 		Amenities: []string{"Pool", "pool", "POOL", "spa", "gym", "bar", "wifi"},
 	}.Normalize()
 
