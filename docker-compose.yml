@@ -50,12 +50,6 @@ services:
       - "16686:16686" # UI
       - "4318:4318"   # OTLP HTTP
 
-  seed:
-    build: { context: ., args: { CMD: seed } }
-    environment: *service-env
-    depends_on:
-      postgres: { condition: service_healthy }
-
   search:
     build: { context: ., args: { CMD: search } }
     environment:
@@ -63,7 +57,7 @@ services:
       SEARCH_ADDR: :8081
     ports: ["8081:8081"]
     depends_on:
-      seed: { condition: service_completed_successfully }
+      postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
     restart: unless-stopped
 
@@ -74,7 +68,7 @@ services:
       RANKING_ADDR: :8082
     ports: ["8082:8082"]
     depends_on:
-      seed: { condition: service_completed_successfully }
+      postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
     restart: unless-stopped
 
@@ -85,7 +79,7 @@ services:
       ENRICH_ADDR: :8083
     ports: ["8083:8083"]
     depends_on:
-      seed: { condition: service_completed_successfully }
+      postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
     restart: unless-stopped
 

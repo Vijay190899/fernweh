@@ -27,6 +27,44 @@ func Connect(ctx context.Context, url string) (*pgxpool.Pool, error) {
 	return pool, nil
 }
 
+// Bootstrap brings the schema and demo data up to date, holding a Postgres
+// advisory lock so that every service can call this at start-up and exactly
+// one of them does the work while the rest wait a moment and continue.
+//
+// This replaces a one-shot seed container. A container that migrates and then
+// exits zero is correct on a laptop and fragile under an orchestrator: many
+// platforms apply their own restart policy to every service in a stack, which
+// turns a clean exit into a restart loop, and anything waiting on
+// service_completed_successfully then waits forever. Making start-up
+// self-sufficient removes that whole class of deployment failure.
+func Bootstrap(ctx context.Context, pool *pgxpool.Pool, migrations embed.FS, log *slog.Logger,
+	seed func(context.Context, *pgxpool.Pool, *slog.Logger) error) error {
+
+	conn, err := pool.Acquire(ctx)
+	if err != nil {
+		return fmt.Errorf("bootstrap acquire: %w", err)
+	}
+	defer conn.Release()
+
+	// Any constant works so long as every service uses the same one.
+	const lockID int64 = 8274531
+	if _, err := conn.Exec(ctx, "SELECT pg_advisory_lock($1)", lockID); err != nil {
+		return fmt.Errorf("bootstrap lock: %w", err)
+	}
+	defer func() {
+		// Released on its own context: the request context may already be done.
+		_, _ = conn.Exec(context.Background(), "SELECT pg_advisory_unlock($1)", lockID)
+	}()
+
+	if err := Migrate(ctx, pool, migrations, log); err != nil {
+		return err
+	}
+	if seed == nil {
+		return nil
+	}
+	return seed(ctx, pool, log)
+}
+
 // Migrate applies embedded migrations in filename order, tracking versions in
 // schema_migrations. Idempotent; safe to run on every boot.
 func Migrate(ctx context.Context, pool *pgxpool.Pool, migrations embed.FS, log *slog.Logger) error {

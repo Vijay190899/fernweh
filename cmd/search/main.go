@@ -7,7 +7,9 @@ import (
 	"os"
 	"time"
 
+	fernweh "fernweh"
 	"fernweh/internal/inventory"
+	"fernweh/internal/inventory/seed"
 	"fernweh/internal/platform/betterstack"
 	"fernweh/internal/platform/config"
 	"fernweh/internal/platform/db"
@@ -41,6 +43,13 @@ func main() {
 		os.Exit(1)
 	}
 	defer pool.Close()
+
+	// Self-sufficient start-up: whichever database-backed service comes up
+	// first migrates and seeds under an advisory lock, the others no-op.
+	if err := db.Bootstrap(ctx, pool, fernweh.Migrations, log, seed.Populate); err != nil {
+		log.Error("bootstrap failed", "err", err)
+		os.Exit(1)
+	}
 
 	rdb, err := redisx.Connect(ctx, cfg.RedisAddr)
 	if err != nil {
