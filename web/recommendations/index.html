@@ -38,11 +38,14 @@
   <p class="pill-label">How it works</p>
   <h2 class="d3" style="margin-bottom:10px">Four stages, and the code behind each</h2>
   <p class="lede muted" style="margin-bottom:clamp(24px,4vh,44px)">
-    This runs on every search. Step through it below, or open the file that
-    implements any stage.</p>
+    This runs on every search. Each stage links to the file that implements it.</p>
 
-  <div class="pipeline">
-    <button class="btn" id="pipe-play">Play the pipeline</button>
+  <div class="flow">
+    <div class="flow-node terminal">
+      <span class="flow-kind">Browser</span>
+      <strong>A traveller opens or books a listing</strong>
+    </div>
+    <div class="flow-arrow"><span>POST /v1/signals</span></div>
 
     <ol class="stages" id="stages">
       <li class="stage" data-stage="0">
@@ -82,6 +85,20 @@
         <a class="src" href="https://github.com/Vijay190899/fernweh/blob/main/internal/search/service.go" target="_blank" rel="noopener">internal/search/service.go</a>
       </li>
     </ol>
+
+    <div class="flow-arrow"><span>ranked ids + reasons</span></div>
+    <div class="flow-node terminal">
+      <span class="flow-kind">Browser</span>
+      <strong>Results page, reordered, each card carrying its reason</strong>
+    </div>
+
+    <div class="flow-branch">
+      <span class="flow-kind">Failure path</span>
+      <strong>If ranking is slow or down</strong>
+      <p>Search returns base relevance order and marks the response
+        <code>degraded: ranking_unavailable</code>. The traveller still gets
+        results; nothing 500s.</p>
+    </div>
   </div>
 
   <!-- ============ EVALUATION ============ -->
@@ -111,40 +128,6 @@
         should get a concentrated page. It would only become a problem
         approaching zero, which would be a filter bubble.</li>
     </ul>
-  </div>
-
-  <!-- ============ LIVE ============ -->
-  <hr class="rule" style="margin:clamp(46px,8vh,90px) 0 clamp(24px,4vh,44px)">
-  <p class="pill-label">Try it</p>
-  <h2 class="d3" style="margin-bottom:10px">Teach it, then watch it reorder</h2>
-  <p class="lede muted" style="margin-bottom:22px">Book a few stays of the same
-    kind, then run a vague search. Avoid pinning a month: that filters inventory
-    in Postgres before ranking ever sees it.</p>
-
-  <form id="search-form" class="searchbar" autocomplete="off">
-    <label class="sr-only" for="q">Describe your trip</label>
-    <input id="q" name="q" type="text" maxlength="500" placeholder="Somewhere with a sauna">
-    <button class="btn" type="submit" id="go">Search</button>
-  </form>
-  <div class="chips" id="examples">
-    <button type="button" class="chip">Somewhere with a sauna</button>
-    <button type="button" class="chip">Anywhere with a pool</button>
-    <button type="button" class="chip">Beach stay in Crete</button>
-    <button type="button" class="chip">Ski chalet in the Alps</button>
-  </div>
-
-  <div id="results-zone" class="hidden">
-    <div id="meta" class="meta"></div>
-    <div id="relaxations" class="notice hidden"></div>
-    <div class="results-layout">
-      <div id="results" class="grid-cards"></div>
-      <aside class="panel">
-        <h3>What the engine knows</h3>
-        <p class="fine">Session only. No account, nothing kept past seven days.</p>
-        <div id="profile-body"><p class="fine">No signals yet. This session ranks cold.</p></div>
-        <button id="reset-session" class="ghost">Forget this session</button>
-      </aside>
-    </div>
   </div>
 </main>
 

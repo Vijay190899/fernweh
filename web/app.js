@@ -301,37 +301,6 @@ $("#reset-session")?.addEventListener("click", () => {
   $("#profile-body").innerHTML = '<p class="fine dim">Fresh session. The engine forgot you.</p>';
 });
 
-/* ---------- pipeline walkthrough ---------- */
-(function pipeline() {
-  const stages = $$("#stages .stage");
-  const play = $("#pipe-play");
-  if (!stages.length) return;
-
-  let timer = null;
-  const clear = () => stages.forEach((s) => s.classList.remove("active", "done"));
-
-  function run() {
-    clearInterval(timer);
-    clear();
-    let i = 0;
-    const step = () => {
-      if (i > 0) stages[i - 1].classList.replace("active", "done");
-      if (i >= stages.length) { clearInterval(timer); play.textContent = "Play again"; return; }
-      stages[i].classList.add("active");
-      stages[i].scrollIntoView({ block: "nearest", behavior: "smooth" });
-      i++;
-    };
-    step();
-    timer = setInterval(step, 1400);
-  }
-
-  play?.addEventListener("click", run);
-  // Hovering a stage highlights it without disturbing a run in progress.
-  stages.forEach((s) => s.addEventListener("mouseenter", () => {
-    if (!timer) { clear(); s.classList.add("active"); }
-  }));
-})();
-
 /* ---------- offline evaluation numbers ----------
  * Read from the report committed by tools/rankeval, so the page can never
  * show a figure that is not reproducible from the repository. */
