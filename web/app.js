@@ -4,6 +4,13 @@
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => [...document.querySelectorAll(sel)];
 
+/* Everything rendered here originates in the database or in a model reply.
+ * The server allowlists what it can, but the browser should not depend on
+ * that: anything interpolated into innerHTML goes through esc() so a value
+ * that ever slips through is inert markup rather than live HTML. */
+const ESCAPES = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ESCAPES[c]);
+
 /* ---------- session ---------- */
 function newSession() {
   const id = "s_" + crypto.randomUUID().slice(0, 18);
@@ -157,7 +164,7 @@ form?.addEventListener("submit", async (e) => {
 
 function intentPills(intent) {
   const pills = [];
-  const add = (label, val) => val && pills.push(`<span class="pill">${label} <b>${val}</b></span>`);
+  const add = (label, val) => val && pills.push(`<span class="pill">${esc(label)} <b>${esc(val)}</b></span>`);
   add("place", intent.destination || intent.country);
   add("type", intent.category);
   add("month", intent.month ? ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][intent.month] : "");
@@ -195,8 +202,9 @@ function renderCoverage(data) {
   const el = $("#coverage");
   if (!el) return;
   if (!data.unsupported) { el.classList.add("hidden"); return; }
-  el.innerHTML = `<strong>We have no inventory in ${data.unsupported}.</strong>
-    This catalogue covers Europe only. Nothing below is in ${data.unsupported};
+  const place = esc(data.unsupported);
+  el.innerHTML = `<strong>We have no inventory in ${place}.</strong>
+    This catalogue covers Europe only. Nothing below is in ${place};
     these are simply the strongest stays we do have.`;
   el.classList.remove("hidden");
 }
@@ -261,17 +269,17 @@ function renderResults(results) {
     const card = document.createElement("article");
     card.className = "card";
     card.innerHTML = `
-      ${promo ? `<span class="ribbon">${promo}</span>` : ""}
+      ${promo ? `<span class="ribbon">${esc(promo)}</span>` : ""}
       ${thumb(l)}
       <div class="body">
-        <h3>${l.name}</h3>
-        <div class="where">${l.destination} · ${l.country}</div>
+        <h3>${esc(l.name)}</h3>
+        <div class="where">${esc(l.destination)} · ${esc(l.country)}</div>
         <div class="rowline">
           <span class="stars">${l.rating.toFixed(1)} <small>(${l.review_count})</small></span>
           <span class="price">€${Math.round(l.price_per_night_cents / 100)}<span> /night</span></span>
         </div>
-        <div class="tagrow">${(l.amenities || []).slice(0, 4).map((a) => `<span class="tag">${a}</span>`).join("")}</div>
-        ${reasons && reasons.length ? `<div class="whyrow">${reasons.map((r) => `<span class="why">${r}</span>`).join("")}</div>` : ""}
+        <div class="tagrow">${(l.amenities || []).slice(0, 4).map((a) => `<span class="tag">${esc(a)}</span>`).join("")}</div>
+        ${reasons && reasons.length ? `<div class="whyrow">${reasons.map((r) => `<span class="why">${esc(r)}</span>`).join("")}</div>` : ""}
         <div class="actions"><button class="book">Book this trip</button></div>
       </div>`;
 
@@ -302,7 +310,7 @@ async function refreshProfile() {
     const cats = Object.entries(p.category_affinity || {}).sort((a, b) => b[1] - a[1]).slice(0, 4);
     body.innerHTML = `
       ${cats.map(([c, w]) => `
-        <div class="aff"><div class="lbl"><span>${c}</span><span>${Math.round(w * 100)}%</span></div>
+        <div class="aff"><div class="lbl"><span>${esc(c)}</span><span>${Math.round(w * 100)}%</span></div>
         <div class="bar"><i style="width:${Math.round(w * 100)}%"></i></div></div>`).join("")}
       ${p.avg_price_cents ? `<div class="pstat"><span>usual price</span><b>€${Math.round(p.avg_price_cents / 100)}/night</b></div>` : ""}
       <div class="pstat"><span>signals recorded</span><b>${p.events}</b></div>`;
@@ -358,7 +366,7 @@ $("#reset-session")?.addEventListener("click", () => {
     let list = [];
     try { list = JSON.parse(csv); } catch { list = String(csv || "").split(",").filter(Boolean); }
     if (!list.length) return '<span class="fine">None listed</span>';
-    return list.map((a) => `<span class="amenity">${a}</span>`).join("");
+    return list.map((a) => `<span class="amenity">${esc(a)}</span>`).join("");
   };
 
   api("/api/enrich/listings?status=enriched&limit=8").then(async ({ data }) => {
@@ -372,7 +380,7 @@ $("#reset-session")?.addEventListener("click", () => {
 
       $("#before-id").textContent = `${l.name} · ${l.destination}, ${l.country}`;
       $("#before-desc").innerHTML = (desc.before || "").trim()
-        ? desc.before : '<em>Empty. Nothing supplied by the feed.</em>';
+        ? esc(desc.before) : '<em>Empty. Nothing supplied by the feed.</em>';
       $("#before-amen").innerHTML = amen ? chips(amen.before) : '<span class="fine">None listed</span>';
       $("#after-desc").textContent = desc.after;
       $("#after-amen").innerHTML = amen ? chips(amen.after) : chips(JSON.stringify(l.amenities));
@@ -439,9 +447,9 @@ function renderOpsRows(el, listings, withAudit) {
     const row = document.createElement("div");
     row.className = "rowc";
     row.innerHTML = `
-      <div class="t"><span>${l.name} · ${l.destination}</span>
-        <span class="status ${l.content_status}">${l.content_status.replace("_", " ")}</span></div>
-      <div class="d">${l.description ? l.description.slice(0, 110) + (l.description.length > 110 ? "…" : "") : "<em>no description</em>"}</div>`;
+      <div class="t"><span>${esc(l.name)} · ${esc(l.destination)}</span>
+        <span class="status ${esc(l.content_status)}">${esc(l.content_status.replace("_", " "))}</span></div>
+      <div class="d">${l.description ? esc(l.description.slice(0, 110)) + (l.description.length > 110 ? "…" : "") : "<em>no description</em>"}</div>`;
     if (withAudit) {
       row.title = "Click to see before/after";
       row.addEventListener("click", async () => {
@@ -452,9 +460,9 @@ function renderOpsRows(el, listings, withAudit) {
         const d = document.createElement("div");
         d.className = "diff";
         d.innerHTML = `
-          <div class="before">${desc.before || "<em>(empty)</em>"}</div>
-          <div class="after">${desc.after}</div>
-          <div class="src">source: ${desc.source}${desc.model ? " · " + desc.model : ""}</div>`;
+          <div class="before">${desc.before ? esc(desc.before) : "<em>(empty)</em>"}</div>
+          <div class="after">${esc(desc.after)}</div>
+          <div class="src">source: ${esc(desc.source)}${desc.model ? " · " + esc(desc.model) : ""}</div>`;
         row.appendChild(d);
       });
     }
@@ -465,19 +473,42 @@ function renderOpsRows(el, listings, withAudit) {
   }
 }
 
+/* Resetting the catalogue is an operator action, not a visitor one, so the
+ * token is asked for and kept locally rather than shipped in the page. */
 $("#reset-demo")?.addEventListener("click", async (e) => {
   const btn = e.currentTarget;
-  btn.disabled = true;
   const original = btn.textContent;
+
+  let token = localStorage.getItem("fernweh_demo_token");
+  if (!token) {
+    token = prompt("Operator token (DEMO_RESET_TOKEN) to re-break the catalogue:");
+    if (!token) return;
+    localStorage.setItem("fernweh_demo_token", token);
+  }
+
+  btn.disabled = true;
   btn.textContent = "Resetting…";
   try {
-    const { data } = await api("/api/enrich/demo-reset", { method: "POST" });
-    btn.textContent = `${data.reset} listings broken again`;
-    pollOps();
+    const res = await fetch("/api/enrich/demo-reset", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Demo-Token": token },
+    });
+    if (res.status === 401) {
+      localStorage.removeItem("fernweh_demo_token");
+      btn.textContent = "Token rejected, click to retry";
+    } else if (res.status === 404) {
+      btn.textContent = "Disabled: set DEMO_RESET_TOKEN";
+    } else if (!res.ok) {
+      btn.textContent = "Reset failed, retry";
+    } else {
+      const data = await res.json();
+      btn.textContent = `${data.reset} listings broken again`;
+      pollOps();
+    }
   } catch {
     btn.textContent = "Reset failed, retry";
   }
-  setTimeout(() => { btn.disabled = false; btn.textContent = original; }, 2600);
+  setTimeout(() => { btn.disabled = false; btn.textContent = original; }, 2800);
 });
 
 $("#scan-btn")?.addEventListener("click", async (e) => {

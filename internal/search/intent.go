@@ -31,6 +31,38 @@ var validCategories = map[string]bool{
 	"wellness": true, "countryside": true, "adventure": true,
 }
 
+// Destination and country are echoed back to the browser, so they are held to
+// the same allowlist discipline as category rather than merely trimmed. A
+// model can be talked into returning anything, and "it is only ever one of
+// these" has to be enforced here rather than hoped for in the prompt.
+var validDestinations = map[string]bool{
+	"Algarve": true, "Mallorca": true, "Crete": true, "Santorini": true,
+	"Amalfi Coast": true, "Costa Brava": true, "Dubrovnik": true,
+	"Canary Islands": true, "Sardinia": true, "Madeira": true, "Cyprus": true,
+	"Berlin": true, "Paris": true, "Barcelona": true, "Rome": true,
+	"Prague": true, "Vienna": true, "Amsterdam": true, "Lisbon": true,
+	"Budapest": true, "Copenhagen": true, "Zermatt": true, "Innsbruck": true,
+	"Chamonix": true, "Livigno": true, "Baden-Baden": true, "Lake Bled": true,
+	"Tuscany": true, "Provence": true, "Douro Valley": true, "Azores": true,
+	"Norwegian Fjords": true, "Scottish Highlands": true,
+}
+
+// Countries the model may legitimately name, including ones the catalogue
+// does not serve: an unserved country still needs to survive normalization so
+// the coverage check can report it honestly by name.
+var validCountries = map[string]bool{
+	"Portugal": true, "Spain": true, "Greece": true, "Italy": true,
+	"Croatia": true, "Cyprus": true, "Germany": true, "France": true,
+	"Czechia": true, "Austria": true, "Netherlands": true, "Hungary": true,
+	"Denmark": true, "Switzerland": true, "Slovenia": true, "Norway": true,
+	"United Kingdom": true, "Ireland": true, "Belgium": true, "Poland": true,
+	"Sweden": true, "Finland": true, "Iceland": true, "Turkey": true,
+	"Morocco": true, "Egypt": true, "India": true, "Thailand": true,
+	"Japan": true, "United States": true, "Mexico": true, "Brazil": true,
+	"Australia": true, "New Zealand": true, "South Africa": true,
+	"Indonesia": true, "Vietnam": true, "China": true, "Canada": true,
+}
+
 // Normalize clamps model/parser output to valid ranges so downstream SQL only
 // ever sees sane values, wherever the intent came from.
 func (in Intent) Normalize() Intent {
@@ -53,7 +85,13 @@ func (in Intent) Normalize() Intent {
 		in.Nights = 0
 	}
 	in.Destination = strings.TrimSpace(in.Destination)
+	if !validDestinations[in.Destination] {
+		in.Destination = ""
+	}
 	in.Country = strings.TrimSpace(in.Country)
+	if !validCountries[in.Country] {
+		in.Country = ""
+	}
 	in.Amenities = lowerAll(in.Amenities, 5)
 	in.VibeTags = lowerAll(in.VibeTags, 3)
 	return in
