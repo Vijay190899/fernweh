@@ -2,8 +2,10 @@ package enrich
 
 import (
 	"context"
+	"crypto/subtle"
 	"log/slog"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/hibiken/asynq"
@@ -43,7 +45,24 @@ func (h *Handler) Register(mux *http.ServeMux) {
 // demoReset re-breaks a bounded slice of inventory so the pipeline can be
 // demonstrated repeatedly. Without it the queue drains once and the most
 // legible part of this service can never be shown again.
+//
+// It is the only externally reachable write in the platform, so it is gated.
+// With no token configured it is switched off entirely rather than left open,
+// because the failure mode of getting this wrong on a public URL is a
+// catalogue somebody else can keep in a broken state.
 func (h *Handler) demoReset(w http.ResponseWriter, r *http.Request) {
+	token := os.Getenv("DEMO_RESET_TOKEN")
+	if token == "" {
+		httpx.Error(w, http.StatusNotFound, "demo reset is not enabled")
+		return
+	}
+	supplied := r.Header.Get("X-Demo-Token")
+	if subtle.ConstantTimeCompare([]byte(supplied), []byte(token)) != 1 {
+		h.log.WarnContext(r.Context(), "demo reset refused")
+		httpx.Error(w, http.StatusUnauthorized, "invalid or missing X-Demo-Token")
+		return
+	}
+
 	n, err := h.store.ResetForDemo(r.Context(), 60)
 	if err != nil {
 		httpx.Error(w, http.StatusInternalServerError, "reset failed")
