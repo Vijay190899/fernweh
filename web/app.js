@@ -132,6 +132,7 @@ form?.addEventListener("submit", async (e) => {
       body: JSON.stringify({ query, session_id: session }),
     });
     renderMeta(data, traceId);
+    renderCoverage(data);
     renderRelaxations(data.relaxations);
     renderResults(data.results);
     // teach the profile what was searched for
@@ -185,6 +186,19 @@ function renderMeta(data, traceId) {
     ${intentPills(data.intent || {})}
     <span class="pill">${data.results.length} results · ${data.took_ms} ms</span>
     ${degraded} ${trace}`;
+}
+
+/* An out-of-catalogue destination gets said out loud. Quietly widening to the
+ * whole world and presenting the result as a near match would be worse than
+ * admitting the platform does not go there. */
+function renderCoverage(data) {
+  const el = $("#coverage");
+  if (!el) return;
+  if (!data.unsupported) { el.classList.add("hidden"); return; }
+  el.innerHTML = `<strong>We have no inventory in ${data.unsupported}.</strong>
+    This catalogue covers Europe only. Nothing below is in ${data.unsupported};
+    these are simply the strongest stays we do have.`;
+  el.classList.remove("hidden");
 }
 
 function renderRelaxations(relaxations) {

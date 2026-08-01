@@ -17,6 +17,7 @@ import (
 type Inventory interface {
 	Search(ctx context.Context, f inventory.Filter) ([]inventory.Listing, error)
 	ActivePromotions(ctx context.Context) (map[string]inventory.Promotion, error)
+	Covers(ctx context.Context, destination, country string) (bool, error)
 }
 
 // Ranker personalizes result order. Implementations must be failure-safe:
@@ -58,7 +59,10 @@ type Response struct {
 	Results      []Result `json:"results"`
 	Relaxations  []string `json:"relaxations,omitempty"`
 	Degraded     []string `json:"degraded,omitempty"`
-	TookMS       int64    `json:"took_ms"`
+	// Unsupported names a place the traveller asked for that this platform
+	// holds no inventory for. Stated plainly rather than quietly relaxed away.
+	Unsupported string `json:"unsupported,omitempty"`
+	TookMS      int64  `json:"took_ms"`
 }
 
 type Service struct {
@@ -91,6 +95,21 @@ func (s *Service) Search(ctx context.Context, query, sessionID string) (Response
 	resp.Intent, resp.IntentSource = intent, source
 	if source == "fallback" {
 		resp.Degraded = append(resp.Degraded, "llm_unavailable")
+	}
+
+	// The catalogue is regional. If the traveller named a place it does not
+	// cover, say so and drop the constraint, rather than letting the ladder
+	// widen to the whole world and present the result as a near match.
+	if intent.Destination != "" || intent.Country != "" {
+		covered, err := s.inv.Covers(ctx, intent.Destination, intent.Country)
+		if err == nil && !covered {
+			resp.Unsupported = intent.Destination
+			if resp.Unsupported == "" {
+				resp.Unsupported = intent.Country
+			}
+			intent.Destination, intent.Country = "", ""
+			s.log.InfoContext(ctx, "destination not covered", "asked", resp.Unsupported)
+		}
 	}
 
 	// 2. Retrieve, walking the relaxation ladder until something matches.

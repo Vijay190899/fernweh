@@ -325,6 +325,10 @@ body.scrolled .top { color: var(--ink); text-shadow: none; background: var(--pap
 .badge.cache { background: transparent; color: var(--warn); border: 1px solid var(--warn); }
 .meta a { color: var(--ink); }
 .notice { border-left: 3px solid var(--ink); background: var(--card); padding: 15px 18px; margin: 16px 0 0; font-size: 15.5px; }
+/* Saying "we do not go there" is a stronger signal than a relaxation note,
+   so it is coloured as a limit rather than as an adjustment. */
+.notice.coverage { border-left-color: var(--bad); }
+.notice.coverage strong { color: var(--bad); }
 
 .results-layout { display: grid; grid-template-columns: minmax(0, 1fr) 288px; gap: 26px; align-items: start; margin-top: 26px; }
 .grid-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(232px, 1fr)); gap: 12px; }

@@ -14,8 +14,9 @@ import (
 // fakeInventory returns listings only when the filter matches a canned rule,
 // letting tests drive the relaxation ladder deterministically.
 type fakeInventory struct {
-	match   func(inventory.Filter) []inventory.Listing
-	queries []inventory.Filter
+	match     func(inventory.Filter) []inventory.Listing
+	queries   []inventory.Filter
+	uncovered map[string]bool
 }
 
 func (f *fakeInventory) Search(_ context.Context, fl inventory.Filter) ([]inventory.Listing, error) {
@@ -25,6 +26,13 @@ func (f *fakeInventory) Search(_ context.Context, fl inventory.Filter) ([]invent
 
 func (f *fakeInventory) ActivePromotions(context.Context) (map[string]inventory.Promotion, error) {
 	return map[string]inventory.Promotion{}, nil
+}
+
+func (f *fakeInventory) Covers(_ context.Context, dest, country string) (bool, error) {
+	if f.uncovered == nil {
+		return true, nil
+	}
+	return !f.uncovered[dest] && !f.uncovered[country], nil
 }
 
 type fakeRanker struct {
@@ -86,6 +94,50 @@ func TestSearchWalksLadderAndReportsRelaxations(t *testing.T) {
 	}
 	if len(resp.Relaxations) == 0 || resp.Relaxations[0] != "relaxed style preferences" {
 		t.Errorf("applied relaxations must be surfaced, got %v", resp.Relaxations)
+	}
+}
+
+func TestUncoveredDestinationIsStatedNotSubstituted(t *testing.T) {
+	// The catalogue is regional. Asking for somewhere it does not serve must
+	// say so; quietly widening and presenting the other side of the world as a
+	// near match is worse than admitting no coverage.
+	// Crete is used because the deterministic parser recognises it; the
+	// catalogue is then told it holds nothing there.
+	inv := &fakeInventory{
+		uncovered: map[string]bool{"Crete": true},
+		match: func(f inventory.Filter) []inventory.Listing {
+			if f.Destination != "" || f.Country != "" {
+				t.Errorf("uncovered place should have been dropped, got %+v", f)
+			}
+			return []inventory.Listing{{ID: "lst_9", Rating: 4.1}}
+		},
+	}
+	svc := NewService(inv, testExtractor(), &fakeRanker{}, slog.Default())
+
+	resp, err := svc.Search(context.Background(), "a beach trip to Crete", "s1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.Unsupported != "Crete" {
+		t.Errorf("expected the uncovered place to be reported, got %q", resp.Unsupported)
+	}
+	if len(resp.Results) == 0 {
+		t.Error("should still offer alternatives rather than an empty page")
+	}
+}
+
+func TestCoveredDestinationIsNotFlagged(t *testing.T) {
+	inv := &fakeInventory{match: func(inventory.Filter) []inventory.Listing {
+		return []inventory.Listing{{ID: "lst_1", Rating: 4.5}}
+	}}
+	svc := NewService(inv, testExtractor(), &fakeRanker{}, slog.Default())
+
+	resp, err := svc.Search(context.Background(), "beach in Crete", "s1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.Unsupported != "" {
+		t.Errorf("covered destination must not be flagged, got %q", resp.Unsupported)
 	}
 }
 
