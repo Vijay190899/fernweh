@@ -80,6 +80,28 @@ func (r *Repo) Search(ctx context.Context, f Filter) ([]Listing, error) {
 	return scanListings(rows)
 }
 
+// Covers reports whether the catalogue holds anything at all for a
+// destination or country.
+//
+// Without this check, asking for somewhere the platform does not serve falls
+// through the relaxation ladder and comes back with the other side of the
+// world, described only as "similar stays in other destinations". Widening a
+// budget is a helpful relaxation; silently swapping India for Norway is not,
+// so search needs to be able to say it has no coverage.
+func (r *Repo) Covers(ctx context.Context, destination, country string) (bool, error) {
+	if destination == "" && country == "" {
+		return true, nil
+	}
+	var exists bool
+	err := r.pool.QueryRow(ctx, `
+		SELECT EXISTS (
+			SELECT 1 FROM listings
+			WHERE ($1 = '' OR destination ILIKE $1)
+			  AND ($2 = '' OR country ILIKE $2)
+		)`, destination, country).Scan(&exists)
+	return exists, err
+}
+
 // ListByStatus returns listings in the given content status, oldest first.
 func (r *Repo) ListByStatus(ctx context.Context, status string, limit int) ([]Listing, error) {
 	rows, err := r.pool.Query(ctx,
