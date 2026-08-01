@@ -16,6 +16,7 @@ import (
 )
 
 func main() {
+	time.Sleep(5 * time.Second) // Give Docker Compose time to attach watchers before fast-exits
 	log := logging.New("seed")
 	cfg := config.Load("seed")
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
