@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "fernweh-inventory": {
+      "command": "go",
+      "args": ["run", "./cmd/mcp-inventory"],
+      "env": {
+        "DATABASE_URL": "postgres://fernweh:fernweh@localhost:5432/fernweh?sslmode=disable"
+      }
+    }
+  }
+}
