@@ -59,8 +59,8 @@ func obj(props map[string]any, required ...string) map[string]any {
 	return s
 }
 
-func str(desc string) map[string]any  { return map[string]any{"type": "string", "description": desc} }
-func num(desc string) map[string]any  { return map[string]any{"type": "number", "description": desc} }
+func str(desc string) map[string]any { return map[string]any{"type": "string", "description": desc} }
+func num(desc string) map[string]any { return map[string]any{"type": "number", "description": desc} }
 
 var tools = []tool{
 	{

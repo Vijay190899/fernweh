@@ -21,6 +21,12 @@ type Placement struct {
 	ID      string   `json:"id"`
 	Score   float64  `json:"score"`
 	Reasons []string `json:"reasons,omitempty"`
+	// Was is this item's rank in the other ordering. Both sides carry it,
+	// because a page shows a window onto the ranking rather than all of it: an
+	// item can be third on one side and fortieth on the other, and without the
+	// counterpart rank the UI cannot say where an arrival came from or where a
+	// departure went.
+	Was int `json:"was"`
 	// Delta is positions gained against the cold ordering: positive means it
 	// moved up. Always 0 on the cold side, which is the reference.
 	Delta int `json:"delta"`
@@ -59,6 +65,14 @@ func Compare(items []Item, p Persona) Comparison {
 	warm := Rank(items, profile)
 
 	coldRank := make(map[string]int, len(cold))
+	warmRank := make(map[string]int, len(warm))
+	for i, r := range cold {
+		coldRank[r.ID] = i + 1
+	}
+	for i, r := range warm {
+		warmRank[r.ID] = i + 1
+	}
+
 	out := Comparison{
 		Persona:  p,
 		Profile:  profile,
@@ -67,23 +81,27 @@ func Compare(items []Item, p Persona) Comparison {
 		Compared: len(items),
 	}
 	for i, r := range cold {
-		coldRank[r.ID] = i + 1
-		out.Cold[i] = Placement{Rank: i + 1, ID: r.ID, Score: r.Score, Reasons: r.Reasons}
+		// Cold is the reference side, so its delta stays zero; Was points at
+		// where personalization sent this item. Its reasons are kept: an empty
+		// profile explains nothing about the visitor, but a paid placement
+		// still has to disclose itself, on both sides.
+		out.Cold[i] = Placement{
+			Rank: i + 1, ID: r.ID, Score: r.Score, Reasons: r.Reasons,
+			Was: warmRank[r.ID],
+		}
 	}
 	for i, r := range warm {
 		pos := i + 1
-		// An item present in one ordering and not the other cannot happen here
-		// (both rank the same slice), so a missing entry would be a bug rather
-		// than a state to render. Treating it as no movement keeps the UI
-		// honest instead of inventing a jump.
-		delta := 0
-		if before, ok := coldRank[r.ID]; ok {
-			delta = before - pos
-		}
-		if delta != 0 {
+		// Both orderings cover the same slice, so every id is present in both
+		// maps. A zero would mean a bug rather than a state worth rendering.
+		before := coldRank[r.ID]
+		if before != pos {
 			out.Moved++
 		}
-		out.Warm[i] = Placement{Rank: pos, ID: r.ID, Score: r.Score, Reasons: r.Reasons, Delta: delta}
+		out.Warm[i] = Placement{
+			Rank: pos, ID: r.ID, Score: r.Score, Reasons: r.Reasons,
+			Was: before, Delta: before - pos,
+		}
 	}
 	return out
 }

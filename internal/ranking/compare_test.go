@@ -30,6 +30,10 @@ func beachPersona(t *testing.T) Persona {
 
 func TestCompareColdSideIgnoresPersona(t *testing.T) {
 	items := compareFixture()
+	byID := map[string]Item{}
+	for _, it := range items {
+		byID[it.ID] = it
+	}
 	cmp := Compare(items, beachPersona(t))
 
 	// Cold is pure base relevance, so the strongest base score leads however
@@ -42,8 +46,48 @@ func TestCompareColdSideIgnoresPersona(t *testing.T) {
 		if p.Delta != 0 {
 			t.Errorf("cold placement %s carries delta %d, the cold side is the reference", p.ID, p.Delta)
 		}
-		if len(p.Reasons) != 0 {
-			t.Errorf("cold placement %s carries reasons %v, an empty profile explains nothing", p.ID, p.Reasons)
+		// Every cold placement must be exactly what an empty profile produces,
+		// score and explanation alike. Anything else means the persona leaked
+		// into the reference side.
+		want, wantReasons := Score(byID[p.ID], Profile{})
+		if round4(want) != p.Score {
+			t.Errorf("cold %s score = %v, unpersonalized scoring gives %v", p.ID, p.Score, round4(want))
+		}
+		if len(wantReasons) != len(p.Reasons) {
+			t.Errorf("cold %s reasons = %v, unpersonalized scoring gives %v", p.ID, p.Reasons, wantReasons)
+		}
+	}
+}
+
+// A page shows a window onto the ranking, so an item can be visible on one
+// side and far down the other. Both sides carry the counterpart rank, or the
+// UI has no way to say where an arrival came from.
+func TestCompareCarriesCounterpartRanks(t *testing.T) {
+	items := compareFixture()
+	cmp := Compare(items, beachPersona(t))
+
+	warmRank := map[string]int{}
+	for _, p := range cmp.Warm {
+		warmRank[p.ID] = p.Rank
+	}
+	for _, p := range cmp.Cold {
+		if p.Was != warmRank[p.ID] {
+			t.Errorf("cold %s says it went to #%d, warm has it at #%d", p.ID, p.Was, warmRank[p.ID])
+		}
+		if p.Was == 0 {
+			t.Errorf("cold %s has no counterpart rank", p.ID)
+		}
+	}
+	coldRank := map[string]int{}
+	for _, p := range cmp.Cold {
+		coldRank[p.ID] = p.Rank
+	}
+	for _, p := range cmp.Warm {
+		if p.Was != coldRank[p.ID] {
+			t.Errorf("warm %s says it came from #%d, cold has it at #%d", p.ID, p.Was, coldRank[p.ID])
+		}
+		if p.Was-p.Rank != p.Delta {
+			t.Errorf("warm %s: was %d, rank %d, delta %d do not agree", p.ID, p.Was, p.Rank, p.Delta)
 		}
 	}
 }

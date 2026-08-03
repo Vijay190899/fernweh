@@ -107,11 +107,27 @@ func (h *Handler) stats(w http.ResponseWriter, r *http.Request) {
 	if stats.Total > 0 {
 		completeness = float64(complete) / float64(stats.Total)
 	}
+
+	// The dashboard wants the counters and a sample of each side together, and
+	// it wants them repeatedly while a queue drains. Served as three endpoints
+	// that was three round trips per tick, which is most of a rate limit spent
+	// on watching one thing happen. The samples are small and the caller always
+	// needs them, so they belong in the same response.
+	samples := map[string][]inventory.Listing{}
+	for _, status := range []string{inventory.StatusNeedsEnrichment, inventory.StatusEnriched} {
+		ls, err := h.store.ListByStatus(r.Context(), status, 8)
+		if err != nil {
+			continue // counters are still worth serving without the samples
+		}
+		samples[status] = ls
+	}
+
 	httpx.JSON(w, http.StatusOK, map[string]any{
 		"inventory":    stats.ByStatus,
 		"total":        stats.Total,
 		"completeness": completeness,
 		"queue":        queue,
+		"samples":      samples,
 	})
 }
 
