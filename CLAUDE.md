@@ -1,4 +1,4 @@
-﻿# CLAUDE.md, working agreements for AI-assisted development in this repo
+# CLAUDE.md, working agreements for AI-assisted development in this repo
 
 This repo is built AI-first with Claude Code. These are the standing
 instructions that keep generated code consistent with the architecture.
