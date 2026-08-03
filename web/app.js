@@ -705,8 +705,14 @@ $("#reset-demo")?.addEventListener("click", async (e) => {
       pollOps();
       // Queue them straight away so the tiles start moving without a second
       // click, then follow the drain closely for a while.
-      await fetch("/api/enrich/scan", { method: "POST" }).catch(() => {});
-      btn.textContent = `${data.reset} queued, watch them repair`;
+      const scan = await fetch("/api/enrich/scan", { method: "POST" })
+        .then((r) => r.json()).catch(() => ({ enqueued: 0 }));
+      // Report what was queued, not what was broken. They differ when a
+      // backlog was already outstanding, and the queued figure is the one the
+      // tiles are about to move by.
+      btn.textContent = scan.enqueued > 0
+        ? `${scan.enqueued} queued, watch them repair`
+        : "Nothing left to break, the catalogue is already gapped";
       followDrain();
     }
   } catch {

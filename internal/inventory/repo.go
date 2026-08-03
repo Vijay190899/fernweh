@@ -185,13 +185,19 @@ func (r *Repo) ResetForDemo(ctx context.Context, n int) (int, error) {
 	if n <= 0 || n > 200 {
 		n = 60
 	}
+	// Anything that currently has content is a valid thing to break, whether
+	// that content arrived with the seed or was written by the pipeline.
+	// Restricting this to already-enriched rows meant that on a freshly
+	// deployed stack, where nothing has been enriched yet, the button a
+	// visitor presses first reported breaking nothing.
 	tag, err := r.pool.Exec(ctx, `
 		UPDATE listings SET description = NULL, content_status = $1,
 		       content_hash = NULL, updated_at = now()
 		WHERE id IN (
-			SELECT id FROM listings WHERE content_status = $2
+			SELECT id FROM listings
+			WHERE content_status = ANY($2)
 			ORDER BY random() LIMIT $3
-		)`, StatusNeedsEnrichment, StatusEnriched, n)
+		)`, StatusNeedsEnrichment, []string{StatusEnriched, StatusComplete}, n)
 	if err != nil {
 		return 0, err
 	}
