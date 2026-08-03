@@ -188,11 +188,34 @@ result. Numbers and method are in [EVALUATION.md](EVALUATION.md).
 |---|---|
 | OpenRouter | Fallback parser / template generator; `degraded: llm_unavailable`; UI badge flips to "rules parsed" |
 | Ranking service | Search returns base relevance order; `degraded: ranking_unavailable` |
-| Redis (cache, profiles) | Intent extraction skips cache; ranking runs cold; budget guard fails open |
+| Redis (cache, profiles) | Intent extraction skips cache; ranking runs cold; budget guard fails open. Measured: full results, `degraded: ranking_unavailable`, about 7s against 0.2s healthy |
 | Redis (Asynq) | Enrichment pauses; interactive search unaffected |
 | PostgreSQL | Search fails (it is the inventory); health checks flip and the orchestrator restarts |
 | Jaeger | Spans drop; requests unaffected (batch exporter, fire and forget) |
 | Betterstack | Log copies drop from a bounded queue; stdout stays authoritative; requests unaffected |
+
+Every row above except PostgreSQL was verified by stopping the dependency and
+watching what the API returns, not by reading the code that was supposed to
+handle it. That is worth doing, because the Redis row used to be wrong.
+
+The word in it was "skips", which implies free. In practice a dead Redis was
+costing each command five dial attempts at a five second timeout, with retries
+and backoff on top, so a search made four advisory Redis calls and took long
+enough that the browser gave up first. Degrading correctly and hanging are
+indistinguishable to whoever is waiting.
+
+`platform/redisx` now bounds dials and commands to 250ms and disables retries,
+which is the right layer for it: every user of this client treats Redis as
+advisory, so none of them should be able to reintroduce the stall by forgetting
+to wrap a lookup. The opening handshake keeps its own budget and retries until
+its context expires, because services can legitimately start before Redis does
+and a caller treats that failure as fatal.
+
+The residual ~7s is the pool still attempting several dials per command plus an
+uncached model call per query, which is what losing an intent cache costs. It
+returns a complete page with the degradation disclosed, which is the contract.
+A production deployment would put a circuit breaker in front of it so a known
+dead dependency costs one failed dial rather than several.
 
 ## What changes at real scale
 
