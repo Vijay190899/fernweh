@@ -155,15 +155,17 @@
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const start = performance.now();
 
-  function frame(now) {
+  // Takes milliseconds of animation played, not a wall-clock timestamp, so
+  // pausing and resuming continues the motion instead of jumping it forward by
+  // however long the page spent hidden.
+  function frame(ms) {
     resize();
     px += (tx - px) * 0.05;
     py += (ty - py) * 0.05;
     const [a, b, c] = palette();
     gl.uniform2f(U.uRes, canvas.width, canvas.height);
-    gl.uniform1f(U.uTime, reduced ? 12 : (now - start) / 1000);
+    gl.uniform1f(U.uTime, reduced ? 12 : ms / 1000);
     gl.uniform2f(U.uPointer, px, py);
     gl.uniform3fv(U.uA, a);
     gl.uniform3fv(U.uB, b);
@@ -175,10 +177,48 @@
   }
 
   if (reduced) {
-    requestAnimationFrame(frame);
-  } else {
-    const loop = (n) => { frame(n); requestAnimationFrame(loop); };
-    requestAnimationFrame(loop);
+    requestAnimationFrame(() => frame(12000)); // one still frame, mid-motion
+    document.documentElement.classList.add("has-bg");
+    return;
   }
+
+  /* Stop when nobody is looking.
+   *
+   * Browsers throttle requestAnimationFrame in a hidden tab, so on a normal
+   * desktop an unconditional loop is close to free. Headless and embedded
+   * webviews are the exception: they can consider themselves permanently
+   * visible, and with a software rasteriser a fragment shader at full rate is
+   * genuinely expensive. One left open in a preview pane burned roughly
+   * eighty-four CPU-hours before anyone noticed.
+   *
+   * Relying on the host to throttle is the assumption that failed, so the loop
+   * gates itself on document visibility and resumes where it left off. */
+  let running = false, raf = 0, elapsed = 0, last = 0;
+
+  function loop(now) {
+    if (!running) return;
+    elapsed += now - last;
+    last = now;
+    frame(elapsed);
+    raf = requestAnimationFrame(loop);
+  }
+
+  function play() {
+    if (running) return;
+    running = true;
+    last = performance.now();
+    raf = requestAnimationFrame(loop);
+  }
+
+  function pause() {
+    running = false;
+    cancelAnimationFrame(raf);
+  }
+
+  document.addEventListener("visibilitychange", () =>
+    (document.hidden ? pause() : play()));
+  window.addEventListener("pagehide", pause);
+  if (!document.hidden) play();
+
   document.documentElement.classList.add("has-bg");
 })();
