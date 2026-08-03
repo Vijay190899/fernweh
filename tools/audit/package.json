@@ -1,0 +1,13 @@
+﻿{
+  "name": "fernweh-audit",
+  "private": true,
+  "description": "Drives the running demo the way a visitor would and fails on anything a visitor would notice.",
+  "scripts": {
+    "browser": "node browser.js",
+    "api": "node api.js",
+    "all": "node browser.js && node api.js"
+  },
+  "dependencies": {
+    "puppeteer-core": "^24.0.0"
+  }
+}

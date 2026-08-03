@@ -123,15 +123,14 @@
     ranking: { a: "#ffe2f0", b: "#a86fe0", c: "#f5a15c" },
     content: { a: "#ddf3e6", b: "#4fb894", c: "#f0c65a" },
   };
-  const dark = window.matchMedia("(prefers-color-scheme: dark)");
   const theme = THEMES[canvas.dataset.bg] || THEMES.search;
 
-  function palette() {
-    if (!dark.matches) return [hex(theme.a), hex(theme.b), hex(theme.c)];
-    // Dark mode needs its own steps: dimming the light ones turns them muddy.
-    const dim = (c) => c.map((v) => v * 0.30);
-    return [dim(hex(theme.a)), dim(hex(theme.b)), dim(hex(theme.c))];
-  }
+  // One palette, because the page has one appearance. This used to dim itself
+  // to 30% under prefers-color-scheme: dark, left over from a dark theme that
+  // was never built. The stylesheet has no dark mode, so the result was dimmed
+  // pastels drawn at low alpha over light paper: a flat grey field, on the
+  // default setting of a good share of the machines this will be opened on.
+  const palette = () => [hex(theme.a), hex(theme.b), hex(theme.c)];
 
   let px = 0.5, py = 0.42, tx = 0.5, ty = 0.42;
   window.addEventListener("pointermove", (e) => {
@@ -171,7 +170,7 @@
     gl.uniform3fv(U.uC, c);
     // Strong enough to read as a moving field rather than a flat page, low
     // enough that ink on it still clears contrast comfortably.
-    gl.uniform1f(U.uAlpha, dark.matches ? 0.62 : 0.80);
+    gl.uniform1f(U.uAlpha, 0.80);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
 
