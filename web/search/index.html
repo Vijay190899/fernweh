@@ -11,6 +11,8 @@
 </head>
 <body class="scrolled">
 
+<canvas id="bg" data-bg="search" aria-hidden="true"></canvas>
+
 <header class="top">
   <a class="wordmark" href="/">Fernweh<br>Travel&nbsp;AI</a>
   <nav>
@@ -24,35 +26,30 @@
   </div>
 </header>
 
-<section class="page-hero">
-  <img src="/img/santorini2.jpg" alt="">
-  <div class="page-hero-copy shell">
-    <p class="label">01 - AI Search</p>
-    <h1 class="d2">Understanding<br><em>beats filtering.</em></h1>
-  </div>
-</section>
-
-<main class="shell section">
-  <div class="section-head">
-    <p class="lede">Write a trip the way you would say it out loud. A model turns it
+<section class="engine">
+  <div class="engine-inner">
+    <p class="pill-label">01 · AI Search</p>
+    <h2 class="d1">Say it in a<br><em>sentence.</em></h2>
+    <p class="lede muted">Write a trip the way you would say it out loud. A model turns it
       into a validated intent, and that intent queries live inventory. If the
       model is unavailable, over budget or slow, a deterministic parser answers
       instead and the response tells you which path served it.</p>
-  </div>
-
-  <form id="search-form" class="searchbar" autocomplete="off">
+    <form id="search-form" class="searchbar" autocomplete="off">
     <label class="sr-only" for="q">Describe your trip</label>
     <input id="q" name="q" type="text" maxlength="500" placeholder="A beach weekend under €1,000 in March">
     <button class="btn" type="submit" id="go">Search</button>
   </form>
-  <div class="chips" id="examples">
+    <div class="chips" id="examples">
     <button type="button" class="chip">A beach weekend under €1,000 in March</button>
     <button type="button" class="chip">Family hotel in Crete with kids club, 4 stars</button>
     <button type="button" class="chip">Städtetrip nach Wien im Oktober, ruhig und günstig</button>
     <button type="button" class="chip">5-star ski chalet in Zermatt under €50</button>
     <button type="button" class="chip">Somewhere warm and quiet in late spring, good food</button>
   </div>
+  </div>
+</section>
 
+<main class="shell" style="padding-bottom:clamp(40px,7vh,90px)">
   <div id="results-zone" class="hidden">
     <div id="meta" class="meta"></div>
     <div id="coverage" class="notice coverage hidden"></div>
@@ -69,18 +66,11 @@
       </aside>
     </div>
   </div>
-
-  <hr class="rule" style="margin:clamp(40px,7vh,80px) 0 clamp(22px,4vh,44px)">
-  <dl class="facts">
-    <div><dt>Intent extraction</dt><dd>385&thinsp;/&thinsp;50<small>Input and output tokens per uncached query, about $0.00064.</small></dd></div>
-    <div><dt>Fallback parse</dt><dd>14.8&thinsp;µs<small>Word-boundary lexicon, English and German, zero network.</small></dd></div>
-    <div><dt>Relaxation ladder</dt><dd>1.3&thinsp;µs<small>Style, amenities, rating, budget, dates, place, category.</small></dd></div>
-    <div><dt>Empty pages</dt><dd>0<small>The last rung of the ladder carries no constraints at all.</small></dd></div>
-  </dl>
 </main>
 
 <footer class="foot"></footer>
 
+<script src="/bg.js" defer></script>
 <script src="/app.js" defer></script>
 </body>
 </html>
