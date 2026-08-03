@@ -135,7 +135,7 @@ SSH in and run one command:
 
 ```bash
 ssh ubuntu@<public-ip>
-curl -fsSL https://raw.githubusercontent.com/Vijay190899/fernweh/main/deploy/oracle-setup.sh | bash
+curl -fsSL https://raw.githubusercontent.com/Vijay190899/fernweh/main/deploy/setup.sh | bash
 ```
 
 It installs Docker, adds 2 GB of swap, opens the instance firewall, clones the
