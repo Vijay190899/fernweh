@@ -48,15 +48,35 @@ optional fields:
     foodie, culture, nature]
 Omit any field the query does not imply. Never invent constraints.`
 
+// cached is the cache envelope. The source travels with the intent because a
+// cache hit has to be able to say what originally produced the value.
+//
+// Storing the bare intent lost that: a query answered by the deterministic
+// parser while the model was unavailable was cached, and every later hit was
+// reported as "cache" with no degradation flagged. The response then claimed,
+// truthfully but misleadingly, that the intent came from the cache, with
+// nothing to say the model had never seen the query. Degradation that stops
+// being disclosed after the first request is worse than not degrading
+// gracefully at all, because it is invisible.
+type cached struct {
+	Intent Intent `json:"intent"`
+	Source string `json:"source"`
+}
+
 // Extract returns the intent and its source: "cache", "llm", or "fallback".
+// A cache hit whose value was produced by the fallback parser still reports
+// "fallback", so the disclosure survives caching.
 func (e *Extractor) Extract(ctx context.Context, query string) (Intent, string) {
 	key := cacheKey(query)
 
 	if e.rdb != nil {
 		if raw, err := e.rdb.Get(ctx, key).Bytes(); err == nil {
-			var in Intent
-			if json.Unmarshal(raw, &in) == nil {
-				return in.Normalize(), "cache"
+			var c cached
+			if json.Unmarshal(raw, &c) == nil && c.Source != "" {
+				if c.Source == "fallback" {
+					return c.Intent.Normalize(), "fallback"
+				}
+				return c.Intent.Normalize(), "cache"
 			}
 		}
 	}
@@ -70,27 +90,47 @@ func (e *Extractor) Extract(ctx context.Context, query string) (Intent, string) 
 			if in.IsEmpty() {
 				in = e.fallback.Parse(query)
 			}
-			e.cache(ctx, key, in)
+			e.cache(ctx, key, in, "llm")
 			return in, "llm"
 		}
 	}
 
 	in := e.fallback.Parse(query)
-	e.cache(ctx, key, in)
+	// Cached for a short window only. The rule parser costs nothing to re-run,
+	// and the reason to remember its answer at all is to avoid retrying a model
+	// that is currently down on every single request. Once it recovers, queries
+	// should go back to it quickly rather than being pinned to a degraded
+	// reading for a day.
+	e.cache(ctx, key, in, "fallback")
 	return in, "fallback"
 }
 
-func (e *Extractor) cache(ctx context.Context, key string, in Intent) {
+// Model answers are worth remembering for a day; a degraded reading is worth
+// remembering only long enough to stop a downed model being retried on every
+// request. Different values, so different lifetimes.
+const (
+	llmIntentTTL      = 24 * time.Hour
+	fallbackIntentTTL = 10 * time.Minute
+)
+
+func (e *Extractor) cache(ctx context.Context, key string, in Intent, source string) {
 	if e.rdb == nil {
 		return
 	}
-	if b, err := json.Marshal(in); err == nil {
-		e.rdb.Set(ctx, key, b, 24*time.Hour)
+	ttl := llmIntentTTL
+	if source == "fallback" {
+		ttl = fallbackIntentTTL
+	}
+	if b, err := json.Marshal(cached{Intent: in, Source: source}); err == nil {
+		e.rdb.Set(ctx, key, b, ttl)
 	}
 }
 
+// The version in the key is not decoration. The cached value changed shape
+// when the source moved inside it, and entries written by the previous build
+// would silently unmarshal into a zero-valued envelope.
 func cacheKey(query string) string {
 	norm := strings.Join(strings.Fields(strings.ToLower(query)), " ")
 	sum := sha256.Sum256([]byte(norm))
-	return "intent:v1:" + hex.EncodeToString(sum[:8])
+	return "intent:v2:" + hex.EncodeToString(sum[:8])
 }
