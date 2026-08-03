@@ -423,6 +423,14 @@ body.scrolled .top { color: var(--ink); text-shadow: none; background: var(--pap
 .engine .chips { justify-content: center; margin-top: 22px; max-width: 760px; margin-inline: auto; }
 .engine .chip { background: color-mix(in srgb, var(--paper) 74%, transparent); backdrop-filter: blur(8px); }
 
+/* With the hero band above it the engine must not also claim a full screen,
+   or the search box lands below the fold and the page opens on nothing. */
+.page-hero + .engine {
+  min-height: 0;
+  padding-top: clamp(44px, 7vh, 84px);
+  padding-bottom: clamp(36px, 6vh, 72px);
+}
+
 /* Once results exist the engine stops owning the viewport and behaves like a
    results page. */
 body.has-results .engine { min-height: 0; padding-top: clamp(96px, 14vh, 150px); padding-bottom: clamp(20px, 3vh, 36px); }
@@ -457,7 +465,13 @@ body.has-results .engine { min-height: 0; padding-top: clamp(96px, 14vh, 150px);
   border: 1px solid var(--ink-12); padding: 16px 20px; background: var(--card);
   border-radius: var(--r);
 }
-.flow-node.terminal { border-style: dashed; background: transparent; }
+/* Terminals and the failure branch carry accents too. Left grey they read as
+   unfinished boxes next to four coloured stages. */
+.flow-node.terminal {
+  border-style: dashed; background: transparent;
+  border-color: color-mix(in srgb, var(--rose, #c9647f) 45%, var(--ink-12));
+}
+.flow-node.terminal .flow-kind { color: #a8577a; }
 .flow-node strong { display: block; font-size: 16px; font-weight: 600; }
 .flow-kind {
   display: block; font-size: 11px; letter-spacing: .15em; text-transform: uppercase;
@@ -482,9 +496,36 @@ body.has-results .engine { min-height: 0; padding-top: clamp(96px, 14vh, 150px);
   border: 1px solid var(--ink-12);
 }
 .flow-branch {
-  margin-top: 18px; margin-left: 34px; padding: 16px 20px;
-  border: 1px dashed var(--ink-12); border-left: 3px solid var(--warn);
+  margin: 18px auto 0; padding: 16px 20px; max-width: 92%;
+  border: 1px dashed color-mix(in srgb, var(--warn) 40%, var(--ink-12));
+  border-left: 3px solid var(--warn);
   border-radius: var(--r);
+}
+.flow-branch .flow-kind { color: var(--warn); }
+
+/* ---------- page entrance ----------
+   Opening a product page from the catalogue used to snap. Sections rise in
+   sequence instead, which is short enough not to delay reading. */
+@media (prefers-reduced-motion: no-preference) {
+  header.top { animation: fade .5s ease both; }
+  .page-hero   { animation: heroIn .8s cubic-bezier(.16,.84,.3,1) both; }
+  /* The hero copy trails its own image so the band resolves before the words
+     land on it, which is what makes the open read as deliberate. */
+  .page-hero-copy { animation: rise .7s cubic-bezier(.16,.84,.3,1) .16s both; }
+  .engine, main > section:first-of-type, main.shell > *:first-child {
+    animation: rise .7s cubic-bezier(.16,.84,.3,1) .1s both;
+  }
+}
+@keyframes rise {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+/* Scale, not slide: the band grows into place, so arriving from the catalogue
+   card feels like the card expanding rather than a new document loading. */
+@keyframes heroIn {
+  from { opacity: 0; transform: scale(1.06); }
+  to   { opacity: 1; transform: none; }
 }
 .flow-branch strong { display: block; font-size: 15.5px; font-weight: 600; margin-bottom: 6px; }
 .flow-branch p { margin: 0; font-size: 15px; color: var(--ink-60); line-height: 1.5; }

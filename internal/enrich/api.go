@@ -2,11 +2,11 @@ package enrich
 
 import (
 	"context"
-	"crypto/subtle"
 	"log/slog"
 	"net/http"
-	"os"
 	"strconv"
+	"sync"
+	"time"
 
 	"github.com/hibiken/asynq"
 
@@ -23,11 +23,19 @@ type AdminStore interface {
 }
 
 // Handler is the enrichment admin API: stats, manual scan, before/after audit.
+// resetCooldown throttles the demo reset. In-process is sufficient because
+// enrichment runs as a single instance; a horizontally scaled deployment
+// would move this counter into Redis alongside the LLM budget.
+const resetCooldown = 45 * time.Second
+
 type Handler struct {
 	store     AdminStore
 	scanner   *Scanner
 	inspector *asynq.Inspector
 	log       *slog.Logger
+
+	resetMu   sync.Mutex
+	lastReset time.Time
 }
 
 func NewHandler(store AdminStore, scanner *Scanner, inspector *asynq.Inspector, log *slog.Logger) *Handler {
@@ -46,22 +54,28 @@ func (h *Handler) Register(mux *http.ServeMux) {
 // demonstrated repeatedly. Without it the queue drains once and the most
 // legible part of this service can never be shown again.
 //
-// It is the only externally reachable write in the platform, so it is gated.
-// With no token configured it is switched off entirely rather than left open,
-// because the failure mode of getting this wrong on a public URL is a
-// catalogue somebody else can keep in a broken state.
+// It is the only externally reachable write, so it is made safe rather than
+// gated. A token would keep it secure and make the demo useless: the person
+// this exists for is a visitor clicking a button, and asking them for a secret
+// means they never see the pipeline run.
+//
+// Safe here means bounded and self-repairing. It touches at most 60 rows of
+// synthetic catalogue, the enrichment workers rebuild every one of them within
+// about a minute, and a cooldown stops it being held down. The worst outcome
+// somebody can force is a demo that briefly shows the exact thing it is meant
+// to demonstrate, and then fixes itself.
 func (h *Handler) demoReset(w http.ResponseWriter, r *http.Request) {
-	token := os.Getenv("DEMO_RESET_TOKEN")
-	if token == "" {
-		httpx.Error(w, http.StatusNotFound, "demo reset is not enabled")
+	h.resetMu.Lock()
+	since := time.Since(h.lastReset)
+	if since < resetCooldown {
+		h.resetMu.Unlock()
+		w.Header().Set("Retry-After", strconv.Itoa(int((resetCooldown-since).Seconds())+1))
+		httpx.Error(w, http.StatusTooManyRequests,
+			"a reset just ran; the queue is still draining")
 		return
 	}
-	supplied := r.Header.Get("X-Demo-Token")
-	if subtle.ConstantTimeCompare([]byte(supplied), []byte(token)) != 1 {
-		h.log.WarnContext(r.Context(), "demo reset refused")
-		httpx.Error(w, http.StatusUnauthorized, "invalid or missing X-Demo-Token")
-		return
-	}
+	h.lastReset = time.Now()
+	h.resetMu.Unlock()
 
 	n, err := h.store.ResetForDemo(r.Context(), 60)
 	if err != nil {

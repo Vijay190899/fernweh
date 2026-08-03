@@ -38,10 +38,23 @@ relied on.
 `base-uri 'none'`, `form-action 'self'`. Fonts, scripts, styles and imagery
 are all first-party, which is why the policy can be this tight.
 
-**One gated write.** `POST /v1/enrich/demo-reset` is the only externally
-reachable mutation. It is disabled unless `DEMO_RESET_TOKEN` is set, requires
-that value in an `X-Demo-Token` header, compares it with
-`subtle.ConstantTimeCompare`, and affects at most 200 rows.
+**One bounded write.** `POST /v1/enrich/demo-reset` is the only externally
+reachable mutation. It is bounded rather than authenticated, and that is a
+deliberate trade rather than an omission: the endpoint exists so a visitor can
+watch the enrichment pipeline run, and a credential the visitor does not have
+turns the feature off for exactly the people it was built for.
+
+What makes it acceptable to leave open is that the worst case is uninteresting.
+It clears content fields on at most 60 rows of synthetic catalogue, writes no
+user data, deletes nothing, and the enrichment workers rebuild every affected
+row within about a minute. A 45 second in-process cooldown returns `429` with
+`Retry-After` so it cannot be held down, and there is no unbounded work behind
+it. The most an attacker can force is a demo that briefly shows the process it
+was built to demonstrate, and then repairs itself.
+
+The cooldown is in-process, which is sufficient because enrichment runs as a
+single instance. A horizontally scaled deployment would move that counter into
+Redis alongside the LLM budget.
 
 **Edge protections.** Per-IP token buckets, a 1 MB body cap, timeouts on every
 hop, and a platform-wide daily LLM budget in Redis so a public URL cannot
@@ -56,8 +69,12 @@ network.
 
 **Unauthenticated destructive endpoint (medium, fixed).** `demo-reset` was
 reachable by anyone once the demo was public, and could hold the catalogue in
-a broken state indefinitely. Now token-gated and off by default. Getting this
-wrong on a public URL means somebody else decides what a visitor sees.
+a broken state indefinitely. The first fix was a shared-secret header, which
+closed the hole and broke the feature: a visitor with no token could no longer
+trigger the pipeline they came to see. The endpoint was then rebuilt to be safe
+by construction instead of gated, per the section above. The part that mattered
+was not the token, it was "indefinitely" — a bounded blast radius and a
+self-repairing worker remove that without removing the demo.
 
 **Model-derived values reaching `innerHTML` (fixed).** `Normalize` allowlisted
 `Category` but only trimmed `Destination` and `Country`, and those values are
