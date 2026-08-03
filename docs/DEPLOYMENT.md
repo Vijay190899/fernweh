@@ -68,9 +68,15 @@ docker compose -f docker-compose.yml \
 ```
 
 Caddy is then the only process bound to the host. The gateway, both stores and
-Jaeger are reachable only on the compose network. `docs/ORACLE.md` is a full
-walkthrough for a free Oracle ARM instance using this path, including how to
-get real HTTPS without owning a domain.
+Jaeger are reachable only on the compose network.
+
+Two host walkthroughs use this path and converge completely once the machine
+exists: [ORACLE.md](ORACLE.md) for the permanently free ARM tier, and
+[HETZNER.md](HETZNER.md) for about four euro a month when Oracle's capacity
+lottery will not open. Both cover getting real HTTPS without owning a domain.
+`deploy/setup.sh` provisions either one and detects which it is on, because the
+firewall is the part that differs and the wrong assumption there fails
+silently.
 
 ### Host
 
