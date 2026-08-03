@@ -108,10 +108,11 @@ body.scrolled .top { color: var(--ink); text-shadow: none; background: var(--pap
    The container is tall; the stage inside it is sticky. Scroll distance
    through the container is the timeline: the door opens, then the scene
    rushes past the camera and the products are already there behind it. */
-/* Height is the sequence's duration. It has to be short enough that the
-   animation finishes near the end of the container, or the stage sits pinned
-   and empty for a full viewport after the scene has already faded out. */
-.portal { position: relative; height: 200vh; }
+/* Height is the sequence's duration, and it is deliberately short. At 200vh
+   the door finished opening with most of a screen of empty scrolling still
+   between it and the products; one extra viewport of travel is enough for the
+   whole sequence, so the list arrives as the door does. */
+.portal { position: relative; height: 150vh; }
 /* The stage sits on paper, so as the scene fades out at the end of the fly
    through the viewer lands on the same surface the products are laid out on
    and there is no seam between the sequence and the page. */
@@ -389,6 +390,43 @@ body.scrolled .top { color: var(--ink); text-shadow: none; background: var(--pap
 .live-dot::after { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--good); margin-left: 7px; animation: pulse 1.8s infinite; }
 @keyframes pulse { 50% { opacity: .2; } }
 
+/* ---------- ambient background ----------
+   Fixed behind everything at low contrast. Content sits on translucent
+   surfaces so the field shows through without ever competing with type. */
+#bg { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none; }
+.has-bg body, body:has(#bg) { background: var(--paper); }
+.has-bg .top { background: color-mix(in srgb, var(--paper) 72%, transparent); backdrop-filter: blur(14px) saturate(1.3); }
+.has-bg .facts > div,
+.has-bg .tile,
+.has-bg .stage,
+.has-bg .flow-node,
+.has-bg .compare-card,
+.has-bg .panel,
+.has-bg .rowc,
+.has-bg .honesty { background: color-mix(in srgb, var(--paper) 78%, transparent); backdrop-filter: blur(10px); }
+
+/* ---------- search, laid out as an engine ----------
+   Centred field, action beneath it, suggestions balanced around the centre
+   rather than ragged to one side. */
+.engine { min-height: calc(100vh - 68px); display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: clamp(70px, 12vh, 130px) var(--gutter) clamp(40px, 7vh, 80px); }
+.engine-inner { width: 100%; max-width: 780px; }
+.engine .d2 { margin-bottom: 14px; }
+.engine .lede { margin: 0 auto clamp(28px, 5vh, 52px); text-align: center; max-width: 58ch; }
+.engine .searchbar { flex-direction: column; gap: 14px; max-width: 680px; margin: 0 auto; }
+.engine .searchbar input {
+  width: 100%; text-align: center; font-size: clamp(17px, 1.6vw, 21px);
+  padding: 18px 22px; border-radius: 999px;
+  background: color-mix(in srgb, var(--paper) 82%, transparent);
+  backdrop-filter: blur(10px);
+}
+.engine .searchbar .btn { align-self: center; padding: 15px 44px; border-radius: 999px; }
+.engine .chips { justify-content: center; margin-top: 22px; max-width: 760px; margin-inline: auto; }
+.engine .chip { background: color-mix(in srgb, var(--paper) 74%, transparent); backdrop-filter: blur(8px); }
+
+/* Once results exist the engine stops owning the viewport and behaves like a
+   results page. */
+body.has-results .engine { min-height: 0; padding-top: clamp(96px, 14vh, 150px); padding-bottom: clamp(20px, 3vh, 36px); }
+
 /* ---------- pill labels and centred blocks ---------- */
 .pill-label {
   display: inline-block; margin: 0 0 14px; padding: 6px 15px;
@@ -398,13 +436,23 @@ body.scrolled .top { color: var(--ink); text-shadow: none; background: var(--pap
 }
 .centred { text-align: center; }
 .centred .pill-label { margin-inline: auto; }
+.centred .lede { margin-inline: auto; }
 .centred-lede { margin-inline: auto; }
+/* Pages built around a centred spine: headings and intros centre, and the
+   blocks beneath them keep a comfortable measure instead of stretching. */
+.centred-page .tiles,
+.centred-page .honesty { max-width: 1000px; margin-inline: auto; }
+.centred-page #eval-meta { text-align: center; }
+.centred-page .rule { max-width: 1000px; margin-inline: auto; }
 
 /* ---------- flow chart ----------
    A read-at-a-glance diagram rather than an animation: boxes joined by
    labelled arrows, with the failure path drawn as a separate branch so it is
    visible without having to wait for a sequence to play. */
-.flow { margin-top: 8px; display: grid; gap: 0; }
+/* Centred column with the connector running down the middle, and each stage
+   carrying its own accent so the four steps are distinguishable at a glance
+   instead of reading as four identical grey boxes. */
+.flow { margin: 8px auto 0; display: grid; gap: 0; max-width: 760px; text-align: left; }
 .flow-node {
   border: 1px solid var(--ink-12); padding: 16px 20px; background: var(--card);
   border-radius: var(--r);
@@ -417,19 +465,21 @@ body.scrolled .top { color: var(--ink); text-shadow: none; background: var(--pap
 }
 /* The connector: a vertical rule with an arrowhead and an inline label. */
 .flow-arrow {
-  position: relative; height: 52px; display: grid; place-items: center;
+  position: relative; height: 56px; display: grid; place-items: center;
 }
 .flow-arrow::before {
-  content: ""; position: absolute; top: 0; bottom: 0; left: 34px;
-  border-left: 1px solid var(--ink-12);
+  content: ""; position: absolute; top: 0; bottom: 0; left: 50%;
+  border-left: 2px solid var(--ink-12);
 }
 .flow-arrow::after {
-  content: ""; position: absolute; bottom: 0; left: 30px;
+  content: ""; position: absolute; bottom: -1px; left: calc(50% - 5px);
   border: 5px solid transparent; border-top-color: var(--ink-12);
 }
 .flow-arrow span {
-  position: absolute; left: 52px; font-size: 13px; color: var(--ink-40);
+  position: relative; z-index: 1; font-size: 13px; color: var(--ink-60);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: var(--paper); padding: 3px 12px; border-radius: 999px;
+  border: 1px solid var(--ink-12);
 }
 .flow-branch {
   margin-top: 18px; margin-left: 34px; padding: 16px 20px;
@@ -440,15 +490,30 @@ body.scrolled .top { color: var(--ink); text-shadow: none; background: var(--pap
 .flow-branch p { margin: 0; font-size: 15px; color: var(--ink-60); line-height: 1.5; }
 .flow-branch code { font-size: 13.5px; background: var(--card); padding: 2px 6px; border-radius: 3px; }
 
-.stages { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.stages { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
 .stage {
-  position: relative; border: 1px solid var(--ink-12); border-left: 3px solid var(--ink-12);
-  padding: 18px 20px 18px 62px; background: var(--paper);
-  transition: border-color .35s var(--ease), background .35s var(--ease), transform .35s var(--ease);
+  position: relative; border: 1px solid var(--ink-12); border-radius: var(--r);
+  padding: 20px 22px 20px 68px; background: var(--paper);
+  transition: transform .3s var(--ease), box-shadow .3s var(--ease), border-color .3s var(--ease);
+  overflow: hidden;
 }
+/* Accent rail per stage, so the sequence is followable by colour as well as
+   by number. */
+.stage::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+  background: var(--accent-stage, var(--ink-12));
+}
+.stage:nth-child(1) { --accent-stage: #c9647f; }
+.stage:nth-child(2) { --accent-stage: #b07fc4; }
+.stage:nth-child(3) { --accent-stage: #4f93b8; }
+.stage:nth-child(4) { --accent-stage: #2f8f6a; }
+.stage:hover { transform: translateY(-2px); border-color: var(--accent-stage); box-shadow: var(--shadow-lift, 0 16px 40px rgba(0,0,0,.10)); }
 .stage-n {
-  position: absolute; left: 20px; top: 18px;
-  font-size: 13px; font-weight: 700; color: var(--ink-40); font-variant-numeric: tabular-nums;
+  position: absolute; left: 22px; top: 20px;
+  width: 30px; height: 30px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums;
+  color: #fff; background: var(--accent-stage);
 }
 .stage h4 { margin: 0 0 6px; font-size: 15.5px; font-weight: 700; }
 .stage p { margin: 0 0 12px; font-size: 16px; color: var(--ink-60); line-height: 1.45; max-width: 66ch; }

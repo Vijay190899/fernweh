@@ -25,7 +25,9 @@ import (
 	"fernweh/internal/platform/redisx"
 )
 
-const scanInterval = 5 * time.Minute
+// Long enough that a demo keeps a visible backlog between sweeps, short
+// enough that the platform still repairs itself without anyone asking.
+const scanInterval = 20 * time.Minute
 
 func main() {
 	const service = "enrich"
@@ -89,11 +91,12 @@ func main() {
 
 	// Periodic scan keeps the 24/7 promise: new gaps get found without a
 	// human pressing a button. An immediate scan primes the demo.
+	// No scan at start-up. A freshly deployed demo should still have a visible
+	// backlog when the first visitor arrives, because watching the queue drain
+	// is the most legible thing this service does. Draining it automatically
+	// on boot leaves an empty dashboard and nothing to show.
 	go func() {
 		bg := context.Background()
-		if _, err := scanner.Scan(bg, 200); err != nil {
-			log.Error("initial scan failed", "err", err)
-		}
 		for range time.Tick(scanInterval) {
 			if _, err := scanner.Scan(bg, 200); err != nil {
 				log.Error("periodic scan failed", "err", err)

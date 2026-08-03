@@ -11,6 +11,8 @@
 </head>
 <body class="scrolled">
 
+<canvas id="bg" data-bg="ranking" aria-hidden="true"></canvas>
+
 <header class="top">
   <a class="wordmark" href="/">Fernweh<br>Travel&nbsp;AI</a>
   <nav>
@@ -32,13 +34,13 @@
   </div>
 </section>
 
-<main class="shell section">
+<main class="shell section centred-page">
 
   <!-- ============ PIPELINE ============ -->
-  <p class="pill-label">How it works</p>
+  <div class="centred"><p class="pill-label">How it works</p>
   <h2 class="d3" style="margin-bottom:10px">Four stages, and the code behind each</h2>
   <p class="lede muted" style="margin-bottom:clamp(24px,4vh,44px)">
-    This runs on every search. Each stage links to the file that implements it.</p>
+    This runs on every search. Each stage links to the file that implements it.</p></div>
 
   <div class="flow">
     <div class="flow-node terminal">
@@ -103,14 +105,14 @@
 
   <!-- ============ EVALUATION ============ -->
   <hr class="rule" style="margin:clamp(46px,8vh,90px) 0 clamp(24px,4vh,44px)">
-  <p class="pill-label">Measured, not claimed</p>
+  <div class="centred"><p class="pill-label">Measured, not claimed</p>
   <h2 class="d3" style="margin-bottom:10px">Offline evaluation</h2>
   <p class="lede muted">Six personas are declared in source with a stated
     0&ndash;3 grading rule, then ranked by the same function production uses.
     The baseline is that identical function with an empty profile, which is what
     a first-time visitor receives.
     <a href="https://github.com/Vijay190899/fernweh/blob/main/docs/EVALUATION.md" target="_blank" rel="noopener">Full report and method</a> ·
-    <a href="https://github.com/Vijay190899/fernweh/blob/main/internal/ranking/eval.go" target="_blank" rel="noopener">the harness</a></p>
+    <a href="https://github.com/Vijay190899/fernweh/blob/main/internal/ranking/eval.go" target="_blank" rel="noopener">the harness</a></p></div>
 
   <div id="eval-tiles" class="tiles" style="margin-top:clamp(20px,3vh,36px)"></div>
   <p class="fine" id="eval-meta"></p>
@@ -133,6 +135,7 @@
 
 <footer class="foot"></footer>
 
+<script src="/bg.js" defer></script>
 <script src="/app.js" defer></script>
 </body>
 </html>

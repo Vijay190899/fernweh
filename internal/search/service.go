@@ -141,7 +141,8 @@ func (s *Service) Search(ctx context.Context, query, sessionID string) (Response
 }
 
 func (s *Service) retrieve(ctx context.Context, intent Intent) ([]inventory.Listing, []string, error) {
-	var notes []string
+	var notes, bestNotes []string
+	var best []inventory.Listing
 	for _, step := range RelaxationLadder(intent) {
 		listings, err := s.inv.Search(ctx, step.Intent.Filter(30))
 		if err != nil {
@@ -150,15 +151,31 @@ func (s *Service) retrieve(ctx context.Context, intent Intent) ([]inventory.List
 		if step.Note != "" {
 			notes = append(notes, step.Note)
 		}
-		if len(listings) > 0 {
+		// Keep the strictest rung that fills a page, not merely the strictest
+		// that returns anything. Stopping at one match satisfies "never empty"
+		// while handing the traveller a page with a single card on it, which
+		// reads as a broken search rather than a precise one.
+		if len(listings) >= minResults {
 			if step.Note == "" {
 				notes = nil // exact match, no relaxation applied
 			}
 			return listings, notes, nil
 		}
+		// Remember the best rung seen, so an exhausted ladder still returns
+		// the most complete set rather than the last one tried.
+		if len(listings) > len(best) {
+			best, bestNotes = listings, append([]string(nil), notes...)
+			if step.Note == "" {
+				bestNotes = nil
+			}
+		}
 	}
-	return nil, notes, nil // only possible with an empty inventory
+	return best, bestNotes, nil
 }
+
+// minResults is what counts as a usable page. Below this the ladder keeps
+// relaxing, and every relaxation it applies is still disclosed.
+const minResults = 8
 
 // rank calls the ranking service with a hard deadline; nil means degrade.
 func (s *Service) rank(ctx context.Context, sessionID string, listings []inventory.Listing) []Result {

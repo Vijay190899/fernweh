@@ -59,13 +59,15 @@
     const travel = portal.offsetHeight - window.innerHeight;
     const progress = clamp01((window.scrollY - portal.offsetTop) / (travel || 1));
 
-    // Phase one: the panel swings.
-    const swing = easeInOut(clamp01(progress / 0.42));
+    // Phase one: the panel swings, and quickly. The door is an invitation,
+    // not the content, so it should not cost several screens of scrolling.
+    const swing = easeInOut(clamp01(progress / 0.30));
     panel.style.setProperty("--door", swing.toFixed(4));
 
-    // Phase two: push through the opening. Finishes before the container
-    // ends so the products are already arriving as the stage releases.
-    const push = easeOut(clamp01((progress - 0.36) / 0.52));
+    // Phase two overlaps phase one heavily and completes well before the
+    // container ends, so the product list is arriving while the door is still
+    // opening rather than after a stretch of empty scroll.
+    const push = easeOut(clamp01((progress - 0.20) / 0.55));
     // Scale is exponential so it accelerates the way approaching a doorway
     // actually looks, rather than creeping linearly.
     scene.style.setProperty("--zoom", (1 + push * push * 7).toFixed(4));
