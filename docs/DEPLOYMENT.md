@@ -54,6 +54,24 @@ Traefik  (managed by Coolify)
 PostgreSQL · Redis            internal network only, never published
 ```
 
+### Without a PaaS
+
+Coolify is one option, not a requirement, and it is a second thing that can
+fail during a deployment that is already failing. `deploy/compose.caddy.yml`
+does the same job with one container: Caddy in front of the gateway, automatic
+Let's Encrypt certificates, nothing to renew.
+
+```bash
+docker compose -f docker-compose.yml \
+               -f deploy/compose.prod.yml \
+               -f deploy/compose.caddy.yml up -d
+```
+
+Caddy is then the only process bound to the host. The gateway, both stores and
+Jaeger are reachable only on the compose network. `docs/ORACLE.md` is a full
+walkthrough for a free Oracle ARM instance using this path, including how to
+get real HTTPS without owning a domain.
+
 ### Host
 
 Any host with 2 vCPU and 2 GB of RAM upward. The reference target is an
@@ -103,9 +121,11 @@ this document changes.
    every other service without a route so nothing else is reachable from the
    internet. Apply basic authentication to the Jaeger route.
 
-6. Deploy. The platform runs `docker compose up`, the seed container migrates
-   and populates inventory on first boot, and the services come up behind
-   TLS.
+6. Deploy. The platform runs `docker compose up`. Every service takes a
+   Postgres advisory lock at start-up and whichever wins migrates and seeds
+   inventory, so there is no ordering requirement and no one-shot container
+   whose exit the others must wait on. That waiting was what made an earlier
+   Coolify deployment restart-loop.
 
 Redeploys are a git push followed by the platform's deploy action. Migrations
 are forward-only and idempotent, the seeder is a no-op once inventory exists,

@@ -1,0 +1,46 @@
+# Caddy sits in front of the gateway and nothing else.
+#
+# SITE_ADDRESS is supplied by the environment. With a real domain it is that
+# domain; without one it is <dashed-public-ip>.sslip.io, a public DNS service
+# that resolves any hostname of that shape back to the IP embedded in it. That
+# is enough for Let's Encrypt to issue a genuine certificate, so the demo gets
+# real HTTPS without anyone buying a domain for it.
+#
+# There is deliberately no global options block. An `email` directive with an
+# unset variable expands to `email` with no argument, which is a parse error,
+# and Caddy then crash-loops on a config that looks perfectly reasonable in the
+# file. Its defaults are already what this needs: Let's Encrypt with an
+# automatic ZeroSSL fallback, certificates renewed without being asked.
+
+{$SITE_ADDRESS} {
+	encode zstd gzip
+
+	# Jaeger is an operator tool, not part of the demo. An open trace UI
+	# exposes every query anyone has run, so it sits behind basic auth.
+	#
+	# JAEGER_PASSWORD_HASH defaults to the hash of a random string nobody
+	# holds, which locks the route while still parsing. Leaving the variable
+	# empty instead would fail validation and take the whole site down with
+	# it, which is a bad trade for protecting one optional page.
+	handle /jaeger/* {
+		basic_auth {
+			{$JAEGER_USER} {$JAEGER_PASSWORD_HASH}
+		}
+		uri strip_prefix /jaeger
+		reverse_proxy jaeger:16686
+	}
+
+	handle {
+		reverse_proxy gateway:8080
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

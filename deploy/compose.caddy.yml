@@ -1,0 +1,47 @@
+# TLS overlay for a plain Docker host, no PaaS involved.
+#
+#   docker compose -f docker-compose.yml \
+#                  -f deploy/compose.prod.yml \
+#                  -f deploy/compose.caddy.yml up -d
+#
+# compose.prod.yml stops publishing host ports and assumes something upstream
+# terminates TLS. On a container platform that is the platform's proxy. On a
+# bare VM it is this: one container, automatic certificates, nothing to renew.
+#
+# Caddy is the only thing bound to the host. Everything else, gateway included,
+# is reachable only on the compose network.
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data # certificates and ACME account, must survive restarts
+      - caddy_config:/config
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?set SITE_ADDRESS, e.g. 130-61-1-2.sslip.io}
+      JAEGER_USER: ${JAEGER_USER:-ops}
+      # A bcrypt hash, not a password. Generate your own with:
+      #   docker run --rm caddy:2-alpine caddy hash-password --plaintext 'yours'
+      #
+      # The default is the hash of a random forty-character string that was
+      # generated once and never recorded, so the Jaeger route is locked until
+      # somebody deliberately unlocks it. A valid-but-unusable hash rather than
+      # an empty one, because empty fails Caddy's validation and would take the
+      # entire site down to protect one optional page.
+      JAEGER_PASSWORD_HASH: ${JAEGER_PASSWORD_HASH:-$$2a$$14$$cPrsrMw7vDhVHmDvGTKQi.YyKutg67GqbhEMXh9j7wMy2I/HF7Sfm}
+    depends_on:
+      - gateway
+    deploy: { resources: { limits: { memory: 128M } } }
+
+  # Port 80 belongs to Caddy now. Publishing the gateway as well would leave
+  # the demo reachable over plain HTTP, bypassing every header Caddy adds.
+  gateway:
+    ports: !override []
+
+volumes:
+  caddy_data:
+  caddy_config:
