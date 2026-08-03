@@ -473,50 +473,57 @@ function renderOpsRows(el, listings, withAudit) {
   }
 }
 
-/* Resetting the catalogue is an operator action, not a visitor one, so the
- * token is asked for and kept locally rather than shipped in the page. */
+/* One click, no token. Breaking the catalogue then immediately scanning it is
+ * the whole demonstration, so the two actions are chained: a visitor should
+ * not have to work out that they need to press a second button. */
 $("#reset-demo")?.addEventListener("click", async (e) => {
   const btn = e.currentTarget;
   const original = btn.textContent;
-
-  let token = localStorage.getItem("fernweh_demo_token");
-  if (!token) {
-    token = prompt("Operator token (DEMO_RESET_TOKEN) to re-break the catalogue:");
-    if (!token) return;
-    localStorage.setItem("fernweh_demo_token", token);
-  }
-
   btn.disabled = true;
-  btn.textContent = "Resetting…";
+  btn.textContent = "Breaking listings…";
   try {
-    const res = await fetch("/api/enrich/demo-reset", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Demo-Token": token },
-    });
-    if (res.status === 401) {
-      localStorage.removeItem("fernweh_demo_token");
-      btn.textContent = "Token rejected, click to retry";
-    } else if (res.status === 404) {
-      btn.textContent = "Disabled: set DEMO_RESET_TOKEN";
+    const res = await fetch("/api/enrich/demo-reset", { method: "POST" });
+    if (res.status === 429) {
+      btn.textContent = "Still draining, try shortly";
     } else if (!res.ok) {
-      btn.textContent = "Reset failed, retry";
+      btn.textContent = "Failed, retry";
     } else {
       const data = await res.json();
-      btn.textContent = `${data.reset} listings broken again`;
+      btn.textContent = `${data.reset} broken, queueing…`;
       pollOps();
+      // Queue them straight away so the tiles start moving without a second
+      // click, then follow the drain closely for a while.
+      await fetch("/api/enrich/scan", { method: "POST" }).catch(() => {});
+      btn.textContent = `${data.reset} queued, watch them repair`;
+      followDrain();
     }
   } catch {
-    btn.textContent = "Reset failed, retry";
+    btn.textContent = "Failed, retry";
   }
-  setTimeout(() => { btn.disabled = false; btn.textContent = original; }, 2800);
+  setTimeout(() => { btn.disabled = false; btn.textContent = original; }, 4000);
 });
+
+/* Poll faster than the idle interval while a batch is draining, so the
+ * numbers visibly move instead of stepping every few seconds. */
+function followDrain() {
+  let ticks = 0;
+  const fast = setInterval(() => {
+    pollOps();
+    if (++ticks > 40) clearInterval(fast);
+  }, 900);
+}
 
 $("#scan-btn")?.addEventListener("click", async (e) => {
   e.target.disabled = true;
   e.target.textContent = "Scanning…";
   try {
     const { data } = await api("/api/enrich/scan", { method: "POST" });
-    e.target.textContent = `Queued ${data.enqueued} listings ✓`;
+    // Saying "queued 0" reads as a broken button. It is not: there is simply
+    // nothing outstanding, and the honest response points at what to press.
+    e.target.textContent = data.enqueued > 0
+      ? `Queued ${data.enqueued} listings`
+      : "Nothing outstanding, break some first";
+    if (data.enqueued > 0) followDrain();
   } catch {
     e.target.textContent = "Scan failed, retry";
   }
