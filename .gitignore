@@ -3,3 +3,7 @@
 /bin/
 coverage.out
 .DS_Store
+
+# audit harness deps and screenshots
+tools/audit/node_modules/
+tools/audit/shots/

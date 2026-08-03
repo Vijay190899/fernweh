@@ -131,14 +131,70 @@ func markdown(r ranking.Report) string {
 		"showing anything but one category, which is a filter bubble rather than a\n" +
 		"recommendation.\n\n"
 
+	// Declared order, not map order. Ranging a map shuffled these rows on every
+	// run, so regenerating a report whose numbers had not moved still produced
+	// a diff, and a reader could not tell a real change from reordering.
 	s += "## Per persona\n\n| Persona | NDCG@10 | P@10 | Recall@10 |\n|---|---:|---:|---:|\n"
-	for name, m := range r.PerPersona {
-		s += fmt.Sprintf("| %s | %.4f | %.4f | %.4f |\n", name, m.NDCG10, m.Precision10, m.Recall10)
+	for _, p := range ranking.Personas() {
+		m, ok := r.PerPersona[p.Name]
+		if !ok {
+			continue
+		}
+		s += fmt.Sprintf("| %s | %.4f | %.4f | %.4f |\n", p.Name, m.NDCG10, m.Precision10, m.Recall10)
 	}
 
 	s += "\n## Method\n\nSix personas are declared in `internal/ranking/eval.go`, each stating a\ncategory, a price band, wanted amenities and a vibe. Relevance is graded 0 to\n3 by a rule printed in that file. Each persona's profile is fed to the same\n`Rank` function the service uses in production; the baseline is that identical\nfunction with an empty profile, which is what a first-time visitor receives.\n\nThe harness is exercised by `go test ./internal/ranking/`, which fails if\npersonalization ever stops beating the baseline.\n"
+
+	s += seeingItSection
 	return s
 }
+
+// This file is generated in full, so prose that belongs in it has to live
+// here. Written by hand and appended verbatim: the numbers above are produced,
+// this part is argued.
+const seeingItSection = `
+## Seeing it rather than reading it
+
+An NDCG lift is a claim about ordering that nobody can watch happen. In the
+live product you cannot watch it either, and for a reason worth stating: the
+SQL filters narrow the candidate set before the scorer ever runs, so by the
+time results reach the page most of what personalization would have moved was
+never a candidate. Ranking looks inert even when it is working.
+
+` + "`POST /api/compare`" + ` fixes the candidates and varies only the profile.
+` + "`internal/search/compare.go`" + ` runs the query through the same rule parser and
+the same relaxation ladder that serve live search, then hands one candidate set
+to ` + "`internal/ranking/compare.go`" + `, which ranks it twice: once with an empty
+profile, once with a declared persona. Same items, same scorer, same weights,
+same business-rule term. Anything that moves, moves because of the profile.
+
+Measured against the seeded catalogue on the query "somewhere to stay in
+Europe", 30 candidates:
+
+| Persona | positions changed | top result after | gained |
+| --- | --- | --- | --- |
+| Family by the sea | 29 / 30 | Casa Palma (beach) | 4 |
+| Alpine luxury | 27 / 30 | Chalet Amara (ski) | 5 |
+| City on a budget | 29 / 30 | The Meridian House (city) | 17 |
+| Quiet wellness | 25 / 30 | Sol Spa Retreat (wellness) | 10 |
+
+The cold column is identical across all four runs, which is the check that
+matters: if it ever differs, the comparison is measuring something other than
+personalization. ` + "`TestCompareColdSideIgnoresPersona`" + ` asserts that the cold side
+is exactly what an empty profile produces, score and explanation alike;
+` + "`TestCompareDeltasAreConsistent`" + ` holds the deltas to the two orderings and to
+zero in sum; and ` + "`TestCompareEmptyProfilePersonaMovesNothing`" + ` asserts the
+converse, that a persona which matches nothing moves nothing.
+
+Each column is a window onto the candidate set rather than all of it, so the
+two hold different listings: six of the beach persona's top ten were not on the
+cold page at all. Both sides therefore carry the counterpart rank, and the
+recommendation engine page animates the warm column out of the cold ordering,
+because the movement is the explanation.
+
+The personas are synthetic and declared in source. They are not users, they are
+not derived from traffic, and the page says so next to the result.
+`
 
 func maxInt(a, b int) int {
 	if a > b {
