@@ -323,6 +323,155 @@ $("#reset-session")?.addEventListener("click", () => {
   $("#profile-body").innerHTML = '<p class="fine dim">Fresh session. The engine forgot you.</p>';
 });
 
+/* ---------- cold against warm ----------
+ *
+ * The evaluation table below says personalization beats the cold baseline, and
+ * those numbers are real, but nobody can see a number reorder a page. In live
+ * search you cannot see it either: the SQL filters have already narrowed the
+ * candidates before the scorer runs, so most of what personalization would
+ * have moved was never on the page to move.
+ *
+ * So this holds the candidate set still and varies only the profile. Both
+ * columns render in the cold order first, then the right column FLIPs into its
+ * personalized order. The movement is the explanation. */
+(function comparison() {
+  const cmp = $("#cmp");
+  if (!cmp) return;
+
+  const coldList = $("#cmp-cold"), warmList = $("#cmp-warm");
+  const chips = $("#cmp-personas"), form = $("#cmp-form"), input = $("#cmp-q");
+  const meta = $("#cmp-meta"), profileLine = $("#cmp-profile");
+  const title = $("#cmp-warm-title");
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  let chosen = null, running = false;
+
+  const euros = (cents) => "€" + Math.round(cents / 100);
+
+  function card(r, side) {
+    const l = r.listing;
+    const delta = side === "warm" && r.delta
+      ? `<span class="cmp-delta ${r.delta > 0 ? "up" : "down"}">${r.delta > 0 ? "▲" : "▼"}${Math.abs(r.delta)}</span>`
+      : "";
+    const why = side === "warm" && r.reasons?.length
+      ? `<p class="cmp-why">${r.reasons.map(esc).join(" · ")}</p>` : "";
+    return `<li class="cmp-card" data-id="${esc(l.id)}">
+      <span class="cmp-rank">${r.rank}</span>
+      <div class="cmp-body">
+        <strong>${esc(l.name)}</strong>
+        <p class="cmp-facts">${esc(l.category)} · ${esc(l.destination)} · ${euros(l.price_per_night_cents)}/night · ${l.rating.toFixed(1)}★</p>
+        ${why}
+      </div>
+      ${delta}
+    </li>`;
+  }
+
+  /* FLIP: measure where every card is, reorder the DOM, then play each card
+   * back from where it used to be. Transforms only, so a list of ten animates
+   * without touching layout once. */
+  function flip(list, render) {
+    const before = new Map();
+    [...list.children].forEach((c) => before.set(c.dataset.id, c.getBoundingClientRect().top));
+
+    render();
+
+    if (reduced) return;
+    [...list.children].forEach((c) => {
+      const was = before.get(c.dataset.id);
+      if (was === undefined) return;
+      const dy = was - c.getBoundingClientRect().top;
+      if (!dy) return;
+      c.style.transition = "none";
+      c.style.transform = `translateY(${dy}px)`;
+      c.classList.add("moving");
+    });
+    requestAnimationFrame(() => {
+      [...list.children].forEach((c) => {
+        c.style.transition = "transform .85s cubic-bezier(.2,.85,.25,1)";
+        c.style.transform = "";
+      });
+    });
+    setTimeout(() => {
+      [...list.children].forEach((c) => {
+        c.style.transition = c.style.transform = "";
+        c.classList.remove("moving");
+      });
+    }, 900);
+  }
+
+  function describe(p) {
+    const band = `${euros(p.price_min_cents)}–${euros(p.price_max_cents)}`;
+    return `Declared profile: ${esc(p.category)} · ${p.amenities.map(esc).join(", ")} · ` +
+           `${p.vibes.map(esc).join(", ")} · ${band}/night`;
+  }
+
+  async function run() {
+    if (running || !chosen) return;
+    running = true;
+    cmp.classList.add("busy");
+    meta.textContent = "Ranking the same candidates twice…";
+    try {
+      const { data } = await api("/api/compare", {
+        method: "POST",
+        body: JSON.stringify({ query: input.value.trim(), persona: chosen }),
+      });
+      if (!data.cold.length) {
+        meta.textContent = "That query matched nothing to compare. Try a broader one.";
+        return;
+      }
+
+      title.textContent = data.persona.name;
+      profileLine.innerHTML = describe(data.persona);
+      coldList.innerHTML = data.cold.map((r) => card(r, "cold")).join("");
+
+      // The warm column opens in the cold order so there is a shared starting
+      // point, then moves. Rendering it already sorted would show a different
+      // list rather than the same list rearranged.
+      const warmByID = new Map(data.warm.map((r) => [r.listing.id, r]));
+      warmList.innerHTML = data.cold
+        .map((r) => card({ ...warmByID.get(r.listing.id), rank: r.rank, delta: 0, reasons: [] }, "warm"))
+        .join("");
+
+      setTimeout(() => {
+        flip(warmList, () => {
+          warmList.innerHTML = data.warm.map((r) => card(r, "warm")).join("");
+        });
+      }, reduced ? 0 : 420);
+
+      const pct = data.compared ? Math.round((data.moved / data.compared) * 100) : 0;
+      meta.textContent =
+        `${data.moved} of ${data.compared} candidates changed position (${pct}%), ` +
+        `showing the top ${data.cold.length} of each. Ranked in ${data.took_ms} ms.` +
+        (data.relaxations?.length ? ` Ladder applied: ${data.relaxations.join("; ")}` : "");
+    } catch (err) {
+      meta.textContent = "Comparison unavailable: " + err.message;
+    } finally {
+      running = false;
+      cmp.classList.remove("busy");
+    }
+  }
+
+  api("/api/compare/personas").then(({ data }) => {
+    chips.innerHTML = data.personas
+      .map((p, i) => `<button type="button" class="chip${i ? "" : " on"}" data-persona="${esc(p.name)}">${esc(p.name)}</button>`)
+      .join("");
+    chosen = data.personas[0]?.name || null;
+    run();
+  }).catch(() => {
+    chips.innerHTML = '<p class="fine">Persona list unavailable. Is the ranking service up?</p>';
+  });
+
+  chips.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-persona]");
+    if (!b) return;
+    $$("#cmp-personas .chip").forEach((c) => c.classList.toggle("on", c === b));
+    chosen = b.dataset.persona;
+    run();
+  });
+
+  form.addEventListener("submit", (e) => { e.preventDefault(); run(); });
+})();
+
 /* ---------- offline evaluation numbers ----------
  * Read from the report committed by tools/rankeval, so the page can never
  * show a figure that is not reproducible from the repository. */

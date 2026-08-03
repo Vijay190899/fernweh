@@ -69,11 +69,18 @@ type Service struct {
 	inv       Inventory
 	extractor *Extractor
 	ranker    Ranker
-	log       *slog.Logger
+	// comparer serves the cold/warm demonstration. Optional: a nil comparer
+	// disables that endpoint and leaves search itself untouched.
+	comparer Comparer
+	log      *slog.Logger
 }
 
 func NewService(inv Inventory, ex *Extractor, ranker Ranker, log *slog.Logger) *Service {
-	return &Service{inv: inv, extractor: ex, ranker: ranker, log: log}
+	svc := &Service{inv: inv, extractor: ex, ranker: ranker, log: log}
+	if c, ok := ranker.(Comparer); ok {
+		svc.comparer = c
+	}
+	return svc
 }
 
 // Search is the full pipeline: understand → retrieve (with relaxation) →

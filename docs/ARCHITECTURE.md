@@ -147,6 +147,41 @@ travelers, so it runs at bounded concurrency (2 workers) off an Asynq queue
 with retries, backoff, and TaskID dedup. It can never starve the interactive
 path of database connections.
 
+## Showing that ranking does anything
+
+```mermaid
+flowchart LR
+  Q["query + persona name"] --> S["search<br/>rule parser + relaxation ladder"]
+  S --> C["one candidate set<br/>real listings, real filters"]
+  C --> R["ranking · POST /v1/rank/compare"]
+  R --> A["Rank(items, Profile{})<br/>cold"]
+  R --> B["Rank(items, persona.Profile())<br/>warm"]
+  A --> D["per-item position delta"]
+  B --> D
+  D --> U["two columns, warm animates<br/>from the cold ordering"]
+
+  style Q fill:#f6e9d8,stroke:#c98f4f,color:#3a2a18
+  style S fill:#e4eef7,stroke:#4f93b8,color:#12303f
+  style C fill:#e4eef7,stroke:#4f93b8,color:#12303f
+  style R fill:#efe4f7,stroke:#a86fe0,color:#2d1840
+  style A fill:#f1f1f1,stroke:#9a9a9a,color:#1a1a1a
+  style B fill:#efe4f7,stroke:#a86fe0,color:#2d1840
+  style D fill:#e2f3ea,stroke:#4fb894,color:#12332a
+  style U fill:#f6e9d8,stroke:#c98f4f,color:#3a2a18
+```
+
+Ranking is the hardest service to believe, because a working ranker and a
+broken one produce the same-looking page. Worse, the pipeline hides its own
+work: the SQL filters narrow candidates before the scorer runs, so most of what
+personalization would have reordered was never a candidate.
+
+`POST /api/compare` holds the candidate set still and varies only the profile.
+Search owns the endpoint because the candidates must come from the database
+through the real relaxation ladder; ranking owns the double scoring because the
+scorer and the personas live there. The persona is passed by name and resolved
+against `Personas()`, so a caller cannot supply a profile and manufacture a
+result. Numbers and method are in [EVALUATION.md](EVALUATION.md).
+
 ## Failure modes, by dependency
 
 | Dependency | Failure behavior |

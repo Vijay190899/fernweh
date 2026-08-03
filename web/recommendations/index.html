@@ -103,6 +103,61 @@
     </div>
   </div>
 
+  <!-- ============ COLD vs WARM ============ -->
+  <hr class="rule" style="margin:clamp(46px,8vh,90px) auto clamp(24px,4vh,44px)">
+  <div class="centred"><p class="pill-label">See it happen</p>
+  <h2 class="d3" style="margin-bottom:10px">The same results, ranked for two different people</h2>
+  <p class="lede muted">One query, one candidate set, ranked twice. The left
+    column is a first-time visitor the engine knows nothing about. The right
+    column is the same list scored against a declared persona, and the cards
+    move into their new positions as you watch.
+    <a href="https://github.com/Vijay190899/fernweh/blob/main/internal/ranking/compare.go" target="_blank" rel="noopener">internal/ranking/compare.go</a></p></div>
+
+  <div class="cmp-controls">
+    <p class="cmp-legend">Rank for</p>
+    <div class="chips" id="cmp-personas"></div>
+    <form class="cmp-query" id="cmp-form" autocomplete="off">
+      <label class="sr-only" for="cmp-q">Query both columns share</label>
+      <input id="cmp-q" type="text" maxlength="200" value="somewhere to stay in Europe">
+      <button class="btn" type="submit">Compare</button>
+    </form>
+  </div>
+
+  <div class="cmp" id="cmp" aria-live="polite">
+    <div class="cmp-col">
+      <div class="cmp-head">
+        <h4>Cold session</h4>
+        <p class="fine">No signals. Base relevance only, which is what a
+          first-time visitor receives.</p>
+      </div>
+      <ol class="cmp-list" id="cmp-cold"></ol>
+    </div>
+    <div class="cmp-col warm">
+      <div class="cmp-head">
+        <h4 id="cmp-warm-title">Warm session</h4>
+        <p class="fine" id="cmp-profile">Pick a persona above.</p>
+      </div>
+      <ol class="cmp-list" id="cmp-warm"></ol>
+    </div>
+  </div>
+  <p class="fine" id="cmp-meta"></p>
+
+  <div class="honesty" style="margin-top:clamp(18px,3vh,30px)">
+    <h4>What you are looking at</h4>
+    <ul>
+      <li><strong>The listings are real.</strong> The query runs through the
+        same rule parser and the same relaxation ladder that serve live search,
+        against the seeded catalogue. Nothing here is a recording.</li>
+      <li><strong>The personas are synthetic and declared in source.</strong>
+        There are no users to build a profile from, so the six personas in
+        <code>eval.go</code> stand in, and the one you picked is printed above
+        the right column in full.</li>
+      <li><strong>Only the profile differs between the columns.</strong> Same
+        candidates, same scorer, same weights, same business rules. Anything
+        that moves, moves because of personalization.</li>
+    </ul>
+  </div>
+
   <!-- ============ EVALUATION ============ -->
   <hr class="rule" style="margin:clamp(46px,8vh,90px) auto clamp(24px,4vh,44px)">
   <div class="centred"><p class="pill-label">Measured, not claimed</p>

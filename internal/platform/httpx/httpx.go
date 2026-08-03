@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"log/slog"
 	"net/http"
 	"os"
@@ -96,17 +97,47 @@ func Decode(r *http.Request, v any) error {
 // Client is a shared HTTP client with timeouts for service-to-service calls.
 var Client = &http.Client{Timeout: 5 * time.Second}
 
+// StatusError is a non-2xx reply from an internal service. Callers that
+// forward a result to a browser need the distinction: a 400 upstream means the
+// caller sent something wrong and must not be reported to the user as an
+// outage, which is what a bare error collapses it into.
+type StatusError struct {
+	URL    string
+	Status int
+	Reason string
+}
+
+func (e *StatusError) Error() string { return e.URL + " returned " + e.Reason }
+
+// ClientFault reports whether err was an upstream 4xx, meaning the request was
+// at fault rather than the service.
+func ClientFault(err error) bool {
+	var se *StatusError
+	return errors.As(err, &se) && se.Status >= 400 && se.Status < 500
+}
+
 // PostJSON performs a traced service-to-service POST, decoding into out.
 func PostJSON(ctx context.Context, url string, in, out any) error {
 	body, err := json.Marshal(in)
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
+	return do(ctx, http.MethodPost, url, bytes.NewReader(body), out)
+}
+
+// GetJSON performs a traced service-to-service GET, decoding into out.
+func GetJSON(ctx context.Context, url string, out any) error {
+	return do(ctx, http.MethodGet, url, nil, out)
+}
+
+func do(ctx context.Context, method, url string, body io.Reader, out any) error {
+	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Content-Type", "application/json")
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
 	otelx.Inject(ctx, req)
 	resp, err := Client.Do(req)
 	if err != nil {
@@ -114,7 +145,7 @@ func PostJSON(ctx context.Context, url string, in, out any) error {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 400 {
-		return errors.New(url + " returned " + resp.Status)
+		return &StatusError{URL: url, Status: resp.StatusCode, Reason: resp.Status}
 	}
 	if out == nil {
 		return nil
