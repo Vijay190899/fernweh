@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"errors"
 	"io/fs"
 	"log/slog"
 	"net/http"
@@ -68,16 +69,50 @@ func apiProxy(routes map[string]string, log *slog.Logger) http.Handler {
 			r.Out.Host = u.Host
 			otelx.Inject(r.In.Context(), r.Out)
 		},
+		// The edge already stamped X-Trace-Id from its own server span, and the
+		// upstream stamps the same id from its child span. ReverseProxy copies
+		// upstream headers by appending, so the browser was receiving
+		// "abc, abc" and building a Jaeger link out of it that resolved to
+		// nothing. One id, set at the edge, is what a caller can use.
+		ModifyResponse: func(resp *http.Response) error {
+			resp.Header.Del("X-Trace-Id")
+			return nil
+		},
+		// Every proxy failure used to answer 502 "upstream unavailable",
+		// including the two that have nothing to do with an upstream: a request
+		// too large, and a path that names no service. Both told a caller to go
+		// look for an outage that was not happening.
 		ErrorHandler: func(w http.ResponseWriter, r *http.Request, err error) {
+			var tooLarge *http.MaxBytesError
+			if errors.As(err, &tooLarge) {
+				httpx.Error(w, http.StatusRequestEntityTooLarge, "request body too large")
+				return
+			}
 			log.WarnContext(r.Context(), "proxy error", "path", r.URL.Path, "err", err)
 			httpx.Error(w, http.StatusBadGateway, "upstream unavailable")
 		},
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Reject an unrouted path here rather than letting it fall through to a
+		// failed dial. The reply names nothing about the topology behind it.
+		if _, ok := routes[serviceOf(r.URL.Path)]; !ok {
+			httpx.Error(w, http.StatusNotFound, "no such endpoint")
+			return
+		}
 		r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 		proxy.ServeHTTP(w, r)
 	})
+}
+
+// serviceOf pulls the first path segment after /api/, which is the name the
+// route table is keyed by.
+func serviceOf(path string) string {
+	rest := strings.TrimPrefix(path, "/api/")
+	if i := strings.IndexByte(rest, '/'); i > 0 {
+		return rest[:i]
+	}
+	return rest
 }
 
 func securityHeaders(next http.Handler) http.Handler {

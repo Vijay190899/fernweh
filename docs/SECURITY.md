@@ -58,7 +58,9 @@ Redis alongside the LLM budget.
 
 **Edge protections.** Per-IP token buckets, a 1 MB body cap, timeouts on every
 hop, and a platform-wide daily LLM budget in Redis so a public URL cannot
-drain an API balance.
+drain an API balance. A path naming no known service is refused at the edge
+with 404 and no detail, so probing `/api/*` reveals nothing about what runs
+behind it.
 
 **No secrets in the repository.** `.env` is git-ignored; `.env.example`
 carries names with empty values. The only committed credential is the local
@@ -75,6 +77,13 @@ trigger the pipeline they came to see. The endpoint was then rebuilt to be safe
 by construction instead of gated, per the section above. The part that mattered
 was not the token, it was "indefinitely" — a bounded blast radius and a
 self-repairing worker remove that without removing the demo.
+
+**Status codes that misattributed the fault (fixed).** Three different
+conditions came back as `502 upstream unavailable`: an oversized request body,
+a path naming no service, and an upstream 4xx forwarded through search. None of
+them is an outage, and each one sends whoever is on call to look at the wrong
+thing. They now answer 413, 404 and 400. A status code is an assertion about
+where the fault is; getting it wrong costs someone real time.
 
 **Model-derived values reaching `innerHTML` (fixed).** `Normalize` allowlisted
 `Category` but only trimmed `Destination` and `Country`, and those values are

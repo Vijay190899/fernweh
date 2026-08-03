@@ -393,7 +393,16 @@ body.scrolled .top { color: var(--ink); text-shadow: none; background: var(--pap
 /* ---------- ambient background ----------
    Fixed behind everything at low contrast. Content sits on translucent
    surfaces so the field shows through without ever competing with type. */
-#bg { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none; }
+/* Percentages, not viewport units. 100vw measures the viewport including the
+   scrollbar, so the canvas sat wider than the page it covered and every
+   product page could be dragged sideways. A canvas is a replaced element, so
+   the size cannot simply be dropped in favour of inset:0 either: with width
+   auto it falls back to its intrinsic pixel size and stops covering anything.
+   100% of a fixed element resolves against the viewport, scrollbar excluded. */
+#bg {
+  position: fixed; inset: 0; width: 100%; height: 100%;
+  z-index: -1; pointer-events: none;
+}
 .has-bg body, body:has(#bg) { background: var(--paper); }
 .has-bg .top { background: color-mix(in srgb, var(--paper) 72%, transparent); backdrop-filter: blur(14px) saturate(1.3); }
 .has-bg .facts > div,
@@ -552,7 +561,21 @@ body.has-results .engine { min-height: 0; padding-top: clamp(96px, 14vh, 150px);
   align-items: start; padding: 11px 0; border-top: 1px solid var(--ink-12);
   background: var(--paper);
 }
-.cmp-card.moving { position: relative; z-index: 2; box-shadow: 0 8px 30px rgba(1,1,1,.10); }
+.cmp-card.moving { z-index: 2; box-shadow: 0 8px 30px rgba(1,1,1,.10); }
+/* Departures slide out to the right and fade. Pinned out of flow first, so
+   the column below them can rebuild without waiting for the exit. */
+.cmp-card.leaving {
+  opacity: 0; transform: translateX(26px);
+  transition: opacity .5s ease, transform .6s cubic-bezier(.4,0,.7,.2);
+  pointer-events: none; z-index: 3;
+}
+/* Arrivals were never on the cold page: they come from deeper in the candidate
+   set, so they appear rather than travel. */
+.cmp-card.arriving { animation: cardIn .55s cubic-bezier(.2,.85,.25,1) both; }
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(10px); background: rgba(168,111,224,.16); }
+  to   { opacity: 1; transform: none; }
+}
 .cmp-rank {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 13px; color: var(--ink-40); padding-top: 2px;
@@ -561,11 +584,16 @@ body.has-results .engine { min-height: 0; padding-top: clamp(96px, 14vh, 150px);
 .cmp-facts { margin: 3px 0 0; font-size: 13px; color: var(--ink-60); }
 .cmp-why { margin: 5px 0 0; font-size: 12.5px; color: #7a4fb0; line-height: 1.45; }
 .cmp-delta {
-  font-size: 12px; font-weight: 600; padding: 2px 7px; border-radius: 999px;
-  white-space: nowrap; margin-top: 2px;
+  font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 999px;
+  white-space: nowrap; margin-top: 2px; text-align: center; line-height: 1.35;
+}
+.cmp-delta em {
+  display: block; font-style: normal; font-weight: 500; font-size: 10.5px;
+  opacity: .8;
 }
 .cmp-delta.up { color: #1f7a52; background: rgba(31,122,82,.12); }
 .cmp-delta.down { color: #9a5520; background: rgba(154,85,32,.12); }
+.cmp-delta.flat { color: var(--ink-40); background: rgba(1,1,1,.05); font-weight: 500; }
 
 @media (max-width: 760px) {
   /* Stacked, the two columns stop being comparable at a glance, but the delta
@@ -578,7 +606,13 @@ body.has-results .engine { min-height: 0; padding-top: clamp(96px, 14vh, 150px);
    sequence instead, which is short enough not to delay reading. */
 @media (prefers-reduced-motion: no-preference) {
   header.top { animation: fade .5s ease both; }
-  .page-hero   { animation: heroIn .8s cubic-bezier(.16,.84,.3,1) both; }
+  /* The scale goes on the image, not the band. Scaling a full-width element
+     pushes it past both edges of the viewport for the length of the
+     animation, and on a phone that is a page you can drag sideways while it
+     plays. The band clips its own overflow, so the image inside it gives the
+     same push-in with nothing escaping. */
+  .page-hero { animation: fade .5s ease both; }
+  .page-hero img { animation: heroIn .9s cubic-bezier(.16,.84,.3,1) both; }
   /* The hero copy trails its own image so the band resolves before the words
      land on it, which is what makes the open read as deliberate. */
   .page-hero-copy { animation: rise .7s cubic-bezier(.16,.84,.3,1) .16s both; }

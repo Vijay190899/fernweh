@@ -35,6 +35,7 @@ type Placement struct {
 	ID      string   `json:"id"`
 	Score   float64  `json:"score"`
 	Reasons []string `json:"reasons,omitempty"`
+	Was     int      `json:"was"`
 	Delta   int      `json:"delta"`
 }
 
@@ -53,6 +54,7 @@ type ComparedResult struct {
 	Listing inventory.Listing `json:"listing"`
 	Score   float64           `json:"score"`
 	Reasons []string          `json:"reasons,omitempty"`
+	Was     int               `json:"was"`
 	Delta   int               `json:"delta"`
 }
 
@@ -139,7 +141,8 @@ func attach(ps []Placement, byID map[string]inventory.Listing, limit int) []Comp
 			continue
 		}
 		out = append(out, ComparedResult{
-			Rank: p.Rank, Listing: l, Score: p.Score, Reasons: p.Reasons, Delta: p.Delta,
+			Rank: p.Rank, Listing: l, Score: p.Score, Reasons: p.Reasons,
+			Was: p.Was, Delta: p.Delta,
 		})
 	}
 	return out

@@ -29,12 +29,18 @@ async function api(path, opts = {}) {
   return { data: await res.json(), traceId: res.headers.get("X-Trace-Id") };
 }
 
+/* Fire and forget, but the response still has to be drained. Signals answer
+ * 202 with an empty body; dropping the Response without reading it makes
+ * Chrome tear the request down and log ERR_ABORTED, so a write that succeeded
+ * shows up red in devtools. The write was always landing, but anyone opening
+ * the console while trying the demo would reasonably conclude otherwise. */
 const signal = (payload) =>
   fetch("/api/signals", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ session_id: session, ...payload }),
-  }).catch(() => {});
+    keepalive: true,
+  }).then((r) => r.arrayBuffer()).catch(() => {});
 
 /* ---------- loader ----------
  * The percentage tracks real readiness: fonts decoded and the platform
@@ -331,9 +337,15 @@ $("#reset-session")?.addEventListener("click", () => {
  * candidates before the scorer runs, so most of what personalization would
  * have moved was never on the page to move.
  *
- * So this holds the candidate set still and varies only the profile. Both
- * columns render in the cold order first, then the right column FLIPs into its
- * personalized order. The movement is the explanation. */
+ * So this holds the candidate set still and varies only the profile, and shows
+ * the right column becoming personalized: it opens as a copy of the cold page,
+ * then listings that lost their place slide out, survivors move to their new
+ * ranks, and listings promoted from deeper in the candidate set drop in.
+ *
+ * The two columns are windows onto thirty candidates, not the whole ranking,
+ * so they hold different listings. That is the reason each card carries where
+ * it came from: an arrival at #2 that was #23 is the point, and a column that
+ * silently swapped its contents would not show it. */
 (function comparison() {
   const cmp = $("#cmp");
   if (!cmp) return;
@@ -348,54 +360,103 @@ $("#reset-session")?.addEventListener("click", () => {
 
   const euros = (cents) => "€" + Math.round(cents / 100);
 
-  function card(r, side) {
+  function card(r, side, opts = {}) {
     const l = r.listing;
-    const delta = side === "warm" && r.delta
-      ? `<span class="cmp-delta ${r.delta > 0 ? "up" : "down"}">${r.delta > 0 ? "▲" : "▼"}${Math.abs(r.delta)}</span>`
-      : "";
-    const why = side === "warm" && r.reasons?.length
+    const li = document.createElement("li");
+    li.className = "cmp-card";
+    li.dataset.id = l.id;
+
+    let badge = "";
+    if (side === "warm" && !opts.plain) {
+      if (r.was > 10) {
+        badge = `<span class="cmp-delta up">▲${r.delta}<em>from #${r.was}</em></span>`;
+      } else if (r.delta > 0) {
+        badge = `<span class="cmp-delta up">▲${r.delta}</span>`;
+      } else if (r.delta < 0) {
+        badge = `<span class="cmp-delta down">▼${Math.abs(r.delta)}</span>`;
+      } else {
+        badge = `<span class="cmp-delta flat">held</span>`;
+      }
+    }
+    const why = side === "warm" && !opts.plain && r.reasons?.length
       ? `<p class="cmp-why">${r.reasons.map(esc).join(" · ")}</p>` : "";
-    return `<li class="cmp-card" data-id="${esc(l.id)}">
-      <span class="cmp-rank">${r.rank}</span>
-      <div class="cmp-body">
-        <strong>${esc(l.name)}</strong>
-        <p class="cmp-facts">${esc(l.category)} · ${esc(l.destination)} · ${euros(l.price_per_night_cents)}/night · ${l.rating.toFixed(1)}★</p>
-        ${why}
-      </div>
-      ${delta}
-    </li>`;
+
+    li.innerHTML =
+      `<span class="cmp-rank">${opts.plain ? opts.rank : r.rank}</span>
+       <div class="cmp-body">
+         <strong>${esc(l.name)}</strong>
+         <p class="cmp-facts">${esc(l.category)} · ${esc(l.destination)} · ${euros(l.price_per_night_cents)}/night · ${l.rating.toFixed(1)}★</p>
+         ${why}
+       </div>
+       ${badge}`;
+    return li;
   }
 
-  /* FLIP: measure where every card is, reorder the DOM, then play each card
-   * back from where it used to be. Transforms only, so a list of ten animates
-   * without touching layout once. */
-  function flip(list, render) {
-    const before = new Map();
-    [...list.children].forEach((c) => before.set(c.dataset.id, c.getBoundingClientRect().top));
+  /* The transition, in one beat.
+   *
+   * Departing cards are lifted out of flow first, pinned at the position they
+   * already occupied, so the rest of the column can be measured and rebuilt
+   * without their heights moving the numbers. Then survivors play back from
+   * where they were, and arrivals fade up in place. */
+  function transition(list, targets) {
+    if (reduced) {
+      list.replaceChildren(...targets.map((r) => card(r, "warm")));
+      return;
+    }
 
-    render();
+    // Measure everything before anything moves. Pinning one card out of flow
+    // shifts the ones below it, so reading offsetTop mid-loop reads positions
+    // that have already changed.
+    const before = [...list.children].map((n) => ({
+      node: n, id: n.dataset.id, top: n.offsetTop, height: n.offsetHeight,
+    }));
+    const keep = new Set(targets.map((r) => r.listing.id));
 
-    if (reduced) return;
-    [...list.children].forEach((c) => {
-      const was = before.get(c.dataset.id);
-      if (was === undefined) return;
-      const dy = was - c.getBoundingClientRect().top;
+    list.style.position = "relative";
+    const leavers = [];
+    before.forEach((m) => {
+      if (keep.has(m.id)) return;
+      m.node.style.cssText =
+        `position:absolute;left:0;right:0;top:${m.top}px;height:${m.height}px;`;
+      leavers.push(m.node);
+    });
+
+    // Swap the flow contents, keeping the pinned departures on top of it.
+    before.forEach((m) => { if (keep.has(m.id)) m.node.remove(); });
+    const arrived = targets.map((r) => card(r, "warm"));
+    list.prepend(...arrived);
+
+    const firstTop = new Map(before.map((m) => [m.id, m.top]));
+    const moving = [];
+    arrived.forEach((n) => {
+      const was = firstTop.get(n.dataset.id);
+      if (was === undefined) { n.classList.add("arriving"); return; }
+      const dy = was - n.offsetTop;
       if (!dy) return;
-      c.style.transition = "none";
-      c.style.transform = `translateY(${dy}px)`;
-      c.classList.add("moving");
+      n.style.transform = `translateY(${dy}px)`;
+      n.classList.add("moving");
+      moving.push(n);
     });
+
+    // One forced reflow so the pinned and translated start states are real
+    // before the transitions are attached, otherwise the browser is free to
+    // coalesce both states and animate nothing.
+    void list.offsetHeight;
     requestAnimationFrame(() => {
-      [...list.children].forEach((c) => {
-        c.style.transition = "transform .85s cubic-bezier(.2,.85,.25,1)";
-        c.style.transform = "";
+      leavers.forEach((n) => n.classList.add("leaving"));
+      moving.forEach((n) => {
+        n.style.transition = "transform .8s cubic-bezier(.2,.85,.25,1)";
+        n.style.transform = "";
       });
     });
+
     setTimeout(() => {
-      [...list.children].forEach((c) => {
-        c.style.transition = c.style.transform = "";
-        c.classList.remove("moving");
+      leavers.forEach((n) => n.remove());
+      moving.forEach((n) => {
+        n.style.transition = n.style.transform = "";
+        n.classList.remove("moving");
       });
+      list.style.position = "";
     }, 900);
   }
 
@@ -405,9 +466,12 @@ $("#reset-session")?.addEventListener("click", () => {
            `${p.vibes.map(esc).join(", ")} · ${band}/night`;
   }
 
+  let pending = null;
+
   async function run() {
     if (running || !chosen) return;
     running = true;
+    clearTimeout(pending);
     cmp.classList.add("busy");
     meta.textContent = "Ranking the same candidates twice…";
     try {
@@ -416,32 +480,30 @@ $("#reset-session")?.addEventListener("click", () => {
         body: JSON.stringify({ query: input.value.trim(), persona: chosen }),
       });
       if (!data.cold.length) {
-        meta.textContent = "That query matched nothing to compare. Try a broader one.";
+        meta.textContent = "That query matched no inventory to compare. Try a broader one.";
         return;
       }
 
       title.textContent = data.persona.name;
-      profileLine.innerHTML = describe(data.persona);
-      coldList.innerHTML = data.cold.map((r) => card(r, "cold")).join("");
+      profileLine.textContent = describe(data.persona);
+      coldList.replaceChildren(...data.cold.map((r) => card(r, "cold")));
 
-      // The warm column opens in the cold order so there is a shared starting
-      // point, then moves. Rendering it already sorted would show a different
-      // list rather than the same list rearranged.
-      const warmByID = new Map(data.warm.map((r) => [r.listing.id, r]));
-      warmList.innerHTML = data.cold
-        .map((r) => card({ ...warmByID.get(r.listing.id), rank: r.rank, delta: 0, reasons: [] }, "warm"))
-        .join("");
+      // The warm column opens as a copy of the cold page, so there is a shared
+      // starting point to move away from. Rendering it already personalized
+      // would show two lists rather than one becoming the other.
+      warmList.replaceChildren(
+        ...data.cold.map((r, i) => card(r, "warm", { plain: true, rank: i + 1 })));
 
-      setTimeout(() => {
-        flip(warmList, () => {
-          warmList.innerHTML = data.warm.map((r) => card(r, "warm")).join("");
-        });
-      }, reduced ? 0 : 420);
+      pending = setTimeout(() => transition(warmList, data.warm), reduced ? 0 : 500);
 
+      const arrivals = data.warm.filter((r) => r.was > data.cold.length).length;
       const pct = data.compared ? Math.round((data.moved / data.compared) * 100) : 0;
       meta.textContent =
-        `${data.moved} of ${data.compared} candidates changed position (${pct}%), ` +
-        `showing the top ${data.cold.length} of each. Ranked in ${data.took_ms} ms.` +
+        `${data.moved} of ${data.compared} candidates changed position (${pct}%). ` +
+        (arrivals
+          ? `${arrivals} of the personalized top ${data.warm.length} were not on the cold page at all. `
+          : "") +
+        `Both rankings computed in ${data.took_ms} ms.` +
         (data.relaxations?.length ? ` Ladder applied: ${data.relaxations.join("; ")}` : "");
     } catch (err) {
       meta.textContent = "Comparison unavailable: " + err.message;
@@ -580,14 +642,15 @@ async function pollOps() {
       <div class="tile good"><div class="n">${inv.enriched || 0}</div><div class="l">enriched by AI</div></div>
       <div class="tile"><div class="n">${q.failed_total || 0}</div><div class="l">failures (retried)</div></div>`;
 
-    const [gaps, done] = await Promise.all([
-      api("/api/enrich/listings?status=needs_enrichment&limit=8"),
-      api("/api/enrich/listings?status=enriched&limit=8"),
-    ]);
+    // Samples ride along with the counters. Fetching them separately meant
+    // three round trips for every tick of a poll that runs for half a minute.
+    const samples = s.samples || {};
     $("#gap-count").textContent = `(${inv.needs_enrichment || 0})`;
-    renderOpsRows($("#gap-list"), gaps.data.listings, false);
-    renderOpsRows($("#enriched-list"), done.data.listings, true);
+    renderOpsRows($("#gap-list"), samples.needs_enrichment, false);
+    renderOpsRows($("#enriched-list"), samples.enriched, true);
+    return (q.pending || 0) + (q.active || 0);
   } catch { /* stack warming up */ }
+  return 0;
 }
 
 function renderOpsRows(el, listings, withAudit) {
@@ -652,14 +715,31 @@ $("#reset-demo")?.addEventListener("click", async (e) => {
   setTimeout(() => { btn.disabled = false; btn.textContent = original; }, 4000);
 });
 
-/* Poll faster than the idle interval while a batch is draining, so the
- * numbers visibly move instead of stepping every few seconds. */
+/* Poll faster than the idle interval while a batch is draining, so the numbers
+ * visibly move instead of stepping every few seconds.
+ *
+ * The idle timer is stopped for the duration rather than left running
+ * alongside, and the fast poll stops as soon as the queue is empty. Two timers
+ * racing on the same endpoint spent most of a per-IP rate limit on watching
+ * one thing finish, and would have started answering the visitor 429 if they
+ * so much as opened a second tab. */
+let draining = null;
 function followDrain() {
-  let ticks = 0;
-  const fast = setInterval(() => {
-    pollOps();
-    if (++ticks > 40) clearInterval(fast);
-  }, 900);
+  if (draining) return;
+  stopOps();
+  let ticks = 0, empty = 0;
+  draining = setInterval(async () => {
+    const inFlight = await pollOps();
+    // One empty reading can land between a queue draining and the next batch
+    // being enqueued, so wait for two before declaring it finished.
+    if (inFlight === 0 && ++empty >= 2) ticks = 999;
+    else if (inFlight > 0) empty = 0;
+    if (++ticks > 30) {
+      clearInterval(draining);
+      draining = null;
+      startOps();
+    }
+  }, 1200);
 }
 
 $("#scan-btn")?.addEventListener("click", async (e) => {
