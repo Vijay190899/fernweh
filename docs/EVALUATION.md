@@ -58,3 +58,41 @@ function with an empty profile, which is what a first-time visitor receives.
 
 The harness is exercised by `go test ./internal/ranking/`, which fails if
 personalization ever stops beating the baseline.
+
+## Seeing it rather than reading it
+
+An NDCG lift is a claim about ordering that nobody can watch happen. In the
+live product you cannot watch it either, and for a reason worth stating: the
+SQL filters narrow the candidate set before the scorer ever runs, so by the
+time results reach the page most of what personalization would have moved was
+never a candidate. Ranking looks inert even when it is working.
+
+`POST /api/compare` fixes the candidates and varies only the profile.
+`internal/search/compare.go` runs the query through the same rule parser and
+the same relaxation ladder that serve live search, then hands one candidate
+set to `internal/ranking/compare.go`, which ranks it twice: once with an empty
+profile, once with a declared persona. Same items, same scorer, same weights,
+same business-rule term. Anything that moves, moves because of the profile.
+
+Measured against the seeded catalogue on the query "somewhere to stay in
+Europe", 30 candidates:
+
+| Persona | positions changed | top result after | gained |
+| --- | --- | --- | --- |
+| Family by the sea | 29 / 30 | Casa Palma (beach) | 4 |
+| Alpine luxury | 27 / 30 | Chalet Amara (ski) | 5 |
+| City on a budget | 29 / 30 | The Meridian House (city) | 17 |
+| Quiet wellness | 25 / 30 | Sol Spa Retreat (wellness) | 10 |
+
+The cold column is byte-identical across all four runs, which is the check
+that matters: if it ever differs, the comparison is measuring something other
+than personalization. `TestCompareColdSideIgnoresPersona` and
+`TestCompareDeltasAreConsistent` hold that property, and
+`TestCompareEmptyProfilePersonaMovesNothing` asserts the converse, that a
+persona which matches nothing moves nothing.
+
+The recommendation engine page renders both columns and animates the warm one
+from the cold ordering into its own, because the movement is the explanation.
+
+The personas are synthetic and declared in source. They are not users, they are
+not derived from traffic, and the page says so next to the result.

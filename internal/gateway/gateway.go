@@ -22,6 +22,7 @@ func NewMux(cfg config.Config, staticFS fs.FS, log *slog.Logger) *http.ServeMux 
 	// internet talks to; service topology stays private.
 	routes := map[string]string{
 		"search":  cfg.SearchURL,
+		"compare": cfg.SearchURL,
 		"signals": cfg.RankingURL,
 		"profile": cfg.RankingURL,
 		"enrich":  cfg.EnrichURL,

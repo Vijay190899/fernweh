@@ -503,6 +503,76 @@ body.has-results .engine { min-height: 0; padding-top: clamp(96px, 14vh, 150px);
 }
 .flow-branch .flow-kind { color: var(--warn); }
 
+/* ---------- cold against warm ----------
+   Two columns of the same listings, one ranked with an empty profile and one
+   with a persona's. They must line up row for row, or the movement between
+   them is impossible to read. */
+.cmp-controls {
+  max-width: 980px; margin: clamp(18px, 3vh, 32px) auto clamp(20px, 3vh, 34px);
+  text-align: center;
+}
+.cmp-legend {
+  margin: 0 0 12px; font-size: 11px; letter-spacing: .15em;
+  text-transform: uppercase; color: var(--ink-40); font-weight: 600;
+}
+.cmp-controls .chips { justify-content: center; }
+.cmp-controls .chip.on {
+  background: var(--ink); color: var(--paper); border-color: var(--ink);
+}
+.cmp-query {
+  display: flex; gap: 10px; justify-content: center; margin-top: 18px;
+  flex-wrap: wrap;
+}
+.cmp-query input {
+  flex: 1 1 340px; max-width: 460px; font: inherit; font-size: 15px;
+  padding: 12px 18px; border-radius: 999px; border: 1px solid var(--ink-12);
+  background: color-mix(in srgb, var(--paper) 82%, transparent);
+  color: var(--ink);
+}
+.cmp-query .btn { padding: 12px 30px; border-radius: 999px; }
+
+.cmp {
+  display: grid; grid-template-columns: 1fr 1fr; gap: clamp(14px, 2vw, 28px);
+  max-width: 1080px; margin: 0 auto; align-items: start;
+}
+.cmp.busy { opacity: .55; transition: opacity .2s; }
+.cmp-col { border: 1px solid var(--ink-12); border-radius: var(--r); padding: 18px; }
+/* The warm column is the one making the claim, so it is the one that looks
+   different. */
+.cmp-col.warm {
+  border-color: color-mix(in srgb, #a86fe0 40%, var(--ink-12));
+  background: color-mix(in srgb, #a86fe0 5%, transparent);
+}
+.cmp-head { margin-bottom: 14px; }
+.cmp-head h4 { margin: 0 0 4px; font-size: 17px; font-weight: 600; }
+.cmp-head .fine { margin: 0; min-height: 2.6em; }
+.cmp-list { list-style: none; margin: 0; padding: 0; }
+.cmp-card {
+  display: grid; grid-template-columns: 28px 1fr auto; gap: 12px;
+  align-items: start; padding: 11px 0; border-top: 1px solid var(--ink-12);
+  background: var(--paper);
+}
+.cmp-card.moving { position: relative; z-index: 2; box-shadow: 0 8px 30px rgba(1,1,1,.10); }
+.cmp-rank {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px; color: var(--ink-40); padding-top: 2px;
+}
+.cmp-body strong { display: block; font-size: 15px; font-weight: 600; line-height: 1.35; }
+.cmp-facts { margin: 3px 0 0; font-size: 13px; color: var(--ink-60); }
+.cmp-why { margin: 5px 0 0; font-size: 12.5px; color: #7a4fb0; line-height: 1.45; }
+.cmp-delta {
+  font-size: 12px; font-weight: 600; padding: 2px 7px; border-radius: 999px;
+  white-space: nowrap; margin-top: 2px;
+}
+.cmp-delta.up { color: #1f7a52; background: rgba(31,122,82,.12); }
+.cmp-delta.down { color: #9a5520; background: rgba(154,85,32,.12); }
+
+@media (max-width: 760px) {
+  /* Stacked, the two columns stop being comparable at a glance, but the delta
+     badges still carry the movement. */
+  .cmp { grid-template-columns: 1fr; }
+}
+
 /* ---------- page entrance ----------
    Opening a product page from the catalogue used to snap. Sections rise in
    sequence instead, which is short enough not to delay reading. */

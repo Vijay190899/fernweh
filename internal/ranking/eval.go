@@ -24,14 +24,16 @@ import (
 // rating.
 
 // Persona is a declared traveller profile. It is synthetic and labelled as
-// such wherever these results are shown.
+// such wherever these results are shown. The tags exist because the same
+// personas drive the side-by-side comparison in the UI, and a reader should be
+// able to see the exact profile that produced an ordering.
 type Persona struct {
-	Name       string
-	Category   string
-	Amenities  []string
-	Vibes      []string
-	PriceMin   int // cents per night
-	PriceMax   int
+	Name      string   `json:"name"`
+	Category  string   `json:"category"`
+	Amenities []string `json:"amenities"`
+	Vibes     []string `json:"vibes"`
+	PriceMin  int      `json:"price_min_cents"`
+	PriceMax  int      `json:"price_max_cents"`
 }
 
 // Personas span the catalogue's categories and price bands so coverage is
